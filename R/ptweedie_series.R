@@ -76,6 +76,10 @@ ptweedie_series <- function(q, power, mu, phi, verbose = FALSE, details = FALSE)
   hi.N <- max( ceiling(N) )
   if (verbose) cat("Summing over", lo.N, "to", hi.N, "\n")
   
+  # Add a safety check:
+  hi.N <- min(hi.N, 1e6)
+  if (hi.N < lo.N) hi.N <- lo.N
+  
   # EVALUATE between limits of N
   cdf <- array( dim = length(q), 0 )
   
@@ -84,18 +88,31 @@ ptweedie_series <- function(q, power, mu, phi, verbose = FALSE, details = FALSE)
   alpha  <- (2 - power) / (1 - power)
   
   
-  for (N in (lo.N : hi.N)) {
-    # Poisson density
-    pois.den <- dpois( N, lambda)
-    
-    # Incomplete gamma
-    incgamma.den <- stats::pchisq(2 * q / tau, 
-                           -2 * alpha * N )
-    
-    # What we want
-    cdf <- cdf + pois.den * incgamma.den
-    
-  }
+  N_vec <- lo.N : hi.N
+  
+  # The Poisson weights
+  pois_den <- dpois(N_vec, lambda)
+  
+  # The incomplete Gamma values
+  # We want a matrix where rows = q and columns = N
+  incgamma_matrix <- outer(2 * q / tau, -2 * alpha * N_vec, stats::pchisq)
+  
+  # Multiply each column (N) by its Poisson weight and sum across rows
+  # %*% is a matrix multiplication that does the weighting and summing in one go
+  cdf <- as.vector(incgamma_matrix %*% pois_den)
+  
+  # for (N in (lo.N : hi.N)) {
+  #   # Poisson density
+  #   pois.den <- dpois( N, lambda)
+  #   
+  #   # Incomplete gamma
+  #   incgamma.den <- stats::pchisq(2 * q / tau, 
+  #                          -2 * alpha * N )
+  #   
+  #   # What we want
+  #   cdf <- cdf + pois.den * incgamma.den
+  #   
+  # }
   
   cdf <- cdf + exp( -lambda )
   its <- hi.N - lo.N + 1

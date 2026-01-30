@@ -1,6 +1,6 @@
 Package: tweedie
-Version: 3.0.5
-Date: 2026-01-22
+Version: 3.0.6
+Date: 2026-01-30
 Title: Evaluation of Tweedie Exponential Family Models
 Authors@R: person("Peter K.", "Dunn", email = "pdunn2@usc.edu.au", role = c("cre", "aut") )
 Depends: R (>= 2.8.0)
@@ -13,6 +13,6 @@ License: GPL (>=2)
 NeedsCompilation: yes
 RoxygenNote: 7.3.3
 Config/testthat/edition: 3
-Packaged: 2026-01-30 04:54:19 UTC; pdunn2
+Packaged: 2026-01-30 06:26:34 UTC; pdunn2
 Author: Peter K. Dunn [cre, aut]
 Maintainer: Peter K. Dunn <pdunn2@usc.edu.au>

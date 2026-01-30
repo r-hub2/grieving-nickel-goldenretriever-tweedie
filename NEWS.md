@@ -1,3 +1,23 @@
+tweedie 3.0.6 (Release date: 2026-01-30)
+==============
+
+Changes:
+
+* Trying to fix an obscure bug that only presents on Debian.
+
+
+
+tweedie 3.0.5 (Release date: 2026-01-30)
+==============
+
+Changes:
+
+* FORTRAN code restructured to make the similar flow in the three zones (initial; pre; accel) clearer
+* Some fixes to documentation to pass tests.
+* Some minor fizes to R code.
+
+
+
 tweedie 3.0.4 (Release date: 2026-01-20)
 ==============
 

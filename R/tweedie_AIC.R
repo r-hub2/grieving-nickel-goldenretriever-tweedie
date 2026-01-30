@@ -70,7 +70,7 @@ tweedie_AIC <- function( glm.obj, dispersion = NULL, k = 2, verbose = TRUE){
   p <- get("p", envir = environment(glm.obj$family$variance))
   
   if ( is.null(dispersion)) {  # New section
-    if (p == 1 & verbose) message("*** Tweedie index power = 1: Consider using  dispersion=1  in call to  AICtweedie().\n")
+    if (p == 1 & verbose) message("*** Tweedie index power = 1: Consider using  dispersion=1  in call to  tweedie_AIC().\n")
     dev <- deviance(glm.obj)
     disp <- dev / sum(wt)  # In line with Gamma()$aic
     edf <- edf + 1  # ADD one as we are estimating phi too

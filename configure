@@ -1,0 +1,13 @@
+#!/bin/sh
+# Check if using gfortran to apply the heap-array fix for Debian/Linux
+if "${FC}" --version 2>&1 | grep -iq gfortran; then
+  PKG_FFLAGS="-fno-stack-arrays"
+  PKG_FCFLAGS="-fno-stack-arrays"
+fi
+
+# Generate Makevars from Makevars.in
+sed -e "s|@PKG_FFLAGS@|${PKG_FFLAGS}|" \
+    -e "s|@PKG_FCFLAGS@|${PKG_FCFLAGS}|" \
+    src/Makevars.in > src/Makevars
+
+exit 0
