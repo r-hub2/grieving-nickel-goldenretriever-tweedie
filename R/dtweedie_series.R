@@ -1,5 +1,5 @@
-#' Series  Evaluation for the Tweedie Probability Function
-#'
+#' @title Series Evaluation for the Tweedie Probability Function
+#' @name dtweedie_series
 #' @description
 #' Evaluates the probability density function (\acronym{pdf}) for Tweedie distributions using an infinite series, 
 #' for given values of the dependent variable \code{y}, the mean \code{mu}, dispersion \code{phi}, and power parameter \code{power}.
@@ -32,8 +32,6 @@
 #' 
 #' @keywords distribution
 #'
-#' @aliases dtweedie.series
-
 #' @export
 dtweedie_series <- function(y, power, mu, phi){ 
   # Evaluates the Tweedie density using a series expansion
@@ -114,19 +112,23 @@ dtweedie_series <- function(y, power, mu, phi){
 
 
 
+
+#' @rdname dtweedie_series
 #' @export
-dtweedie.series <- function(q, power, mu, phi){ 
-  .Deprecated("dtweedie_series", package = "tweedie")
-  dtweedie_series(q = q, 
-                  power = power, 
-                  mu = mu, 
-                  phi = phi)
+dtweedie.series <- function(y, power, mu, phi){ 
+  lifecycle::deprecate_warn(when = "3.0.5", 
+                            what = "dtweedie.series()", 
+                            with = "dtweedie_series()")
+  dtweedie_series(y, power, mu, phi)
 }
 
 
 
 
 #############################################################################
+
+
+#' @noRd
 dtweedie_series_smallp <- function(power, y, mu, phi){ 
   
   #
@@ -175,6 +177,9 @@ dtweedie_series_smallp <- function(power, y, mu, phi){
 
 
 #############################################################################
+
+
+#' @noRd
 dtweedie_jw_smallp <- function(y, phi, power ){ 
   #
   # Peter K Dunn
@@ -267,6 +272,9 @@ dtweedie_jw_smallp <- function(y, phi, power ){
 
 
 #############################################################################
+
+
+#' @noRd
 dtweedie_kv_bigp <- function(y, phi, power){ 
   # 
   # Peter K Dunn 
@@ -380,6 +388,8 @@ dtweedie_kv_bigp <- function(y, phi, power){
   
 }
 #############################################################################
+
+#' @noRd
 dtweedie_logv_bigp <- function( y, phi, power){ 
   # Peter K Dunn 
   # 02 Feb 2000 
@@ -497,6 +507,8 @@ dtweedie_logv_bigp <- function( y, phi, power){
 
 
 #############################################################################
+
+#' @noRd
 dtweedie_logw_smallp <- function(y, phi, power){ 
   #
   # Peter K Dunn
@@ -590,11 +602,4 @@ dtweedie_logw_smallp <- function(y, phi, power){
        j.max = j.max )
   
 }
-
-#' @export
-dtweedie.series <- function(y, power, mu, phi){ 
-  .Deprecated("dtweedie_series", package = "tweedie")
-  dtweedie_series(y, power, mu, phi)
-}
-
 

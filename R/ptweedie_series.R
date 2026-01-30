@@ -1,5 +1,5 @@
-#'  Series Evaluation for the Tweedie Distribution Function
-#'
+#' @title Series Evaluation for the Tweedie Distribution Function
+#' @name ptweedie_series
 #' @description
 #' Evaluates the distribution function (\acronym{df}) for Tweedie distributions 
 #' with \eqn{1 < p < 2}{1 < p < 2}
@@ -17,6 +17,10 @@
 #' @param details logical; if \code{TRUE}, returns the value of the distribution function and some details.
 #' 
 #' @return A numeric vector of densities.
+#' 
+#' @note
+#' The 'exact' values for the inverse Gaussian distribution are not really exact, but evaluated using inverse normal distributions,
+#' for which very good numerical approximation are available in R.
 #' 
 #' @references
 #' Dunn, Peter K and Smyth, Gordon K (2005).
@@ -36,9 +40,6 @@
 #' @keywords distribution
 #'
 #' @export
-#' 
-#' @aliases ptweedie.series
-
 ptweedie_series <- function(q, power, mu, phi, verbose = FALSE, details = FALSE) {
   ### NOTE: No notation checks
 
@@ -108,9 +109,14 @@ ptweedie_series <- function(q, power, mu, phi, verbose = FALSE, details = FALSE)
   
 }
 
+
+
+#' @rdname ptweedie_series
 #' @export
 ptweedie.series <- function(q, power, mu, phi, verbose = FALSE, details = FALSE){ 
-  .Deprecated("ptweedie_series", package = "tweedie")
+  lifecycle::deprecate_warn(when = "3.0.5", 
+                            what = "ptweedie.series()", 
+                            with = "ptweedie_series()")
   ptweedie_series(q, power, mu, phi, verbose = FALSE, details = FALSE)
 }
 

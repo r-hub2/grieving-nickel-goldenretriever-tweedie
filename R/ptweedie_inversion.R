@@ -1,12 +1,12 @@
-#' Fourier Inversion Evaluation for the Tweedie Distribution Function
-#'
+#' @title Fourier Inversion Evaluation for the Tweedie Distribution Function
+#' @name ptweedie_inversion
 #' @description
 #' Evaluates the distribution function (\acronym{df}) for Tweedie distributions using Fourier inversion, 
 #' for given values of the dependent variable \code{y}, 
 #' the mean \code{mu}, dispersion \code{phi}, and power parameter \code{power}.
 #' \emph{Not usually called by general users}, but can be in the case of evaluation problems.
 #'
-#' @usage ptweedie_inversion(q, mu, phi, power, verbose = FALSE, details = FALSE)
+#' @usage ptweedie_inversion(q, mu, phi, power, verbose = FALSE, details = FALSE, IGexact = TRUE)
 #'
 #' @param q vector of quantiles.
 #' @param power the power parameter \eqn{p}{power}.
@@ -14,12 +14,17 @@
 #' @param phi the dispersion parameter.
 #' @param verbose logical; if \code{TRUE}, displays some internal computation details. The default is \code{FALSE}.
 #' @param details logical; if \code{TRUE}, returns the value of the distribution and some information about the integration. The default is \code{FALSE}.
+#' @param IGexact logical; if \code{TRUE} (the default), evaluate the inverse Gaussian distribution using the 'exact' values, otherwise uses inversion.
 #' 
 #' @return If \code{details = FALSE}, a numeric vector of the distribution function values; if \code{details = TRUE}, a list containing \code{CDF} (a vector of the values of the distribution function) and \code{regions} (a vector of the number of integration regions used).
 #' 
 #' For special cases of \eqn{p} (i.e., \eqn{p = 0, 1, 2, 3}), where no inversion is needed, \code{regions} is set to \code{NA} for all values of \code{q}.
 #' For special cases of \code{q} for other values of \eqn{p} (i.e., \eqn{P(Y = 0)}), \code{regions} is set to \code{NA}.
 #'
+#' @note
+#' The 'exact' values for the inverse Gaussian distribution are not really exact, but evaluated using inverse normal distributions,
+#' for which very good numerical approximation are available in R.
+#' 
 #' @references
 #' Dunn, P. K. and Smyth, G. K. (2008).
 #' Evaluation of Tweedie exponential dispersion model densities by Fourier inversion.
@@ -30,16 +35,19 @@
 #' @examples
 #' # Plot a Tweedie distribution function
 #' y <- seq(0, 5, length = 100)
-#' Fy <- ptweedie_inversion(y, power = 1.1, mu = 1, phi = 1)
+#' Fy <- ptweedie_inversion(y, mu = 1, phi = 1, power = 1.1)
 #' plot(y, Fy, type = "l", lwd = 2, ylab = "Distribution function")
-#' 
-#' @aliases ptweedie.inversion
 #' 
 #' @keywords distribution
 #' 
 #' @export
-ptweedie_inversion <- function(q, mu, phi, power, verbose = FALSE, details = FALSE ){ 
+ptweedie_inversion <- function(q, mu, phi, power, verbose = FALSE, details = FALSE, IGexact = TRUE ){ 
   ### NOTE: No notation checks
+  
+  # Check
+  if (length(q) == 0L) {
+    return(numeric(0))
+  }
   
   # CHECK THE INPUTS ARE OK AND OF CORRECT LENGTHS
   if (verbose) cat("- Checking, resizing inputs\n")
@@ -53,9 +61,11 @@ ptweedie_inversion <- function(q, mu, phi, power, verbose = FALSE, details = FAL
   regions <- integer(length = length(q)) # Filled with zeros by default
   
   # IDENTIFY SPECIAL CASES
-  special_y_cases <- rep(FALSE, length(q))
+  special_y_cases <- rep(FALSE, 
+                         length(q) )
   if (verbose) cat("- Checking for special cases\n")
   out <- special_cases(q, mu, phi, power,
+                       IGexact = IGexact,
                        type = "CDF")
   
   special_p_cases <- out$special_p_cases
@@ -90,25 +100,26 @@ ptweedie_inversion <- function(q, mu, phi, power, verbose = FALSE, details = FAL
     its_scalar        <- as.integer(0)
     ### END SET UP
   
-  
-    tmp <- .C( "twcomputation",
-               N           = as.integer(N_nonSpecial),              # number of observations
-               power       = as.double(power),                      # p
-               phi         = as.double(phi[!special_y_cases]),      # phi
-               y           = as.double(q[!special_y_cases]),        # y
-               mu          = as.double(mu[!special_y_cases]),       # mu
-               verbose     = as.integer(verbose),                   # verbosity
-               pdf         = as.integer(0),                         # 0: FALSE, as this is the CDF not PDF
-               # THE OUTPUTS:
-               funvalue    = as.double(rep(0, N_nonSpecial)),       # funvalue
-               exitstatus  = as.integer(0),                         # exitstatus
-               relerr      = as.double(0),                          # relerr
-               its         = as.integer(rep(0, N_nonSpecial)),      # its
-               PACKAGE     = "tweedie")
-    cdf[!special_y_cases] <- tmp$funvalue
-    regions[!special_y_cases] <- tmp$its
+    if (N_nonSpecial > 0 ) {
+      tmp <- .C( "twcomputation",
+                 N           = as.integer(N_nonSpecial),              # number of observations
+                 power       = as.double(power),                      # p
+                 phi         = as.double(phi[!special_y_cases]),      # phi
+                 y           = as.double(q[!special_y_cases]),        # y
+                 mu          = as.double(mu[!special_y_cases]),       # mu
+                 verbose     = as.integer(verbose),                   # verbosity
+                 pdf         = as.integer(0),                         # 0: FALSE, as this is the CDF not PDF
+                 # THE OUTPUTS:
+                 funvalue    = as.double(rep(0, N_nonSpecial)),       # funvalue
+                 exitstatus  = as.integer(0),                         # exitstatus
+                 relerr      = as.double(0),                          # relerr
+                 its         = as.integer(rep(0, N_nonSpecial)),      # its
+                 PACKAGE     = "tweedie")
+      cdf[!special_y_cases] <- tmp$funvalue
+      regions[!special_y_cases] <- tmp$its
+    }
   }
-
+  
   if (details) {
     return( list( cdf = cdf,
                   regions = regions))
@@ -117,9 +128,12 @@ ptweedie_inversion <- function(q, mu, phi, power, verbose = FALSE, details = FAL
   }
 }
 
+#' @rdname ptweedie_inversion
 #' @export
 ptweedie.inversion <- function(q, power, mu, phi, verbose, details){ 
-  .Deprecated("ptweedie_inversion", package = "tweedie")
+  lifecycle::deprecate_warn(when = "3.0.5", 
+                            what = "ptweedie.inversion()", 
+                            with = "ptweedie_inversion()")
   ptweedie_inversion(q = q, 
                      power = power,
                      mu = mu, 

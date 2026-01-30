@@ -3,9 +3,20 @@
 \name{tweedie_plot}
 \alias{tweedie_plot}
 \alias{tweedie.plot}
-\title{Plot Tweedie Density Functions}
+\title{Plot Tweedie Models}
 \usage{
 tweedie_plot(y, xi = NULL, mu, phi, type = "pdf", power = NULL, add = FALSE, ...)
+
+tweedie.plot(
+  y,
+  xi = NULL,
+  mu,
+  phi,
+  type = "pdf",
+  power = NULL,
+  add = FALSE,
+  ...
+)
 }
 \arguments{
 \item{y}{the values for \eqn{y}{y} in the plot.}
@@ -33,5 +44,6 @@ If \eqn{1 < p < 2}{1 < power < 2}, the mass at \eqn{Y=0}{Y = 0} is automatically
 \examples{
 y <- seq(0, 5, length = 100)
 tweedie_plot(y, power = 1.1, mu = 1, phi = 1)
+
 
 }

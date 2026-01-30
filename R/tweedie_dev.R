@@ -1,7 +1,6 @@
-#' Unit Deviance for a Tweedie Distribution
-#' 
-#' @description
-#' Computes the unit deviance for Tweedie distributions.
+#' @title Unit Deviance for a Tweedie Distribution
+#' @name tweedie_dev
+#' @description Computes the unit deviance for Tweedie distributions.
 #'
 #' @usage tweedie_dev(y, mu, power)
 #' @param y vector of quantiles.
@@ -19,8 +18,6 @@
 #' # Unit deviance is not symmetric in general:
 #' round( tweedie_dev(0:6, mu = 3, power = 1.1), 3)
 #' 
-#' @aliases tweedie.dev
-#'
 #' @export
 tweedie_dev <- function(y, mu, power){
   # 
@@ -52,9 +49,13 @@ tweedie_dev <- function(y, mu, power){
 }
 
 
+
+#' @rdname tweedie_dev
 #' @export
 tweedie.dev <- function(y, mu, power){ 
-  .Deprecated("tweedie_dev", package = "tweedie")
+  lifecycle::deprecate_warn(when = "3.0.5", 
+                            what = "tweedie.dev()", 
+                            with = "tweedie_dev()")
   tweedie_dev(y, mu, power)
 }
 

@@ -5,12 +5,12 @@ SUBROUTINE accelerate(xvec, wvec, nzeros, Mmatrix, Nmatrix, West)
   
   IMPLICIT NONE
   
-  INTEGER, INTENT(IN)                 :: nzeros
+  INTEGER(C_INT), INTENT(IN)          :: nzeros
   REAL(KIND=C_DOUBLE), INTENT(IN)     :: xvec(:), wvec(:)
   REAL(KIND=C_DOUBLE), INTENT(INOUT)  :: Mmatrix(:, :), Nmatrix(:, :)
   REAL(KIND=C_DOUBLE), INTENT(OUT)    :: West
 
-  INTEGER                         :: p, l_nzeros, maxSize
+  INTEGER(C_INT)                  :: p, l_nzeros, maxSize
   REAL(KIND=C_DOUBLE)             :: denom, psi_new, FF_current, sumw
   REAL(KIND=C_DOUBLE)             :: tinyDenom, scale_denom
   REAL(KIND=C_DOUBLE)             :: inv_x_i, inv_x_l
@@ -38,10 +38,10 @@ SUBROUTINE accelerate(xvec, wvec, nzeros, Mmatrix, Nmatrix, West)
 
 
   ! BEGIN: Main algorithm
-  psi_new = wvec(nzeros)
-  sumw = 0.0E0_C_DOUBLE
+  psi_new = wvec(l_nzeros)
+  sumw = 0.0_C_DOUBLE
 
-  DO p = 1, nzeros
+  DO p = 1, l_nzeros
      sumw = sumw + wvec(p)
   END DO
   FF_current = sumw
@@ -55,8 +55,9 @@ SUBROUTINE accelerate(xvec, wvec, nzeros, Mmatrix, Nmatrix, West)
   Mmatrix(2, 1) = FF_current / psi_new
   Nmatrix(2, 1) = 1.0E0_C_DOUBLE / psi_new
 
+  tinyDenom = SAFETY_SCALE
+  inv_x_l = 1.0E0_C_DOUBLE / xscaled(l_nzeros)
   DO p = 2, l_nzeros
-     inv_x_l = 1.0E0_C_DOUBLE / xscaled(l_nzeros)
      inv_x_i = 1.0E0_C_DOUBLE / xscaled(l_nzeros + 1 - p)
      denom   = inv_x_i - inv_x_l
      scale_denom = MAX( DABS(inv_x_i),  & 

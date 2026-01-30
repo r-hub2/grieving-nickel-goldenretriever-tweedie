@@ -1,74 +1,5 @@
-#' Tweedie internal functions
-#'
-#' @name Tweedie internals
-#' @aliases dtweedie_logv_bigp dtweedie_logw_smallp dtweedie_interp dtweedie_jw_smallp dtweedie_kv_bigp dtweedie_Fortran dtweedie_Inversion_Report dtweedie_Inversion_Threemethods dtweedie_dldphi_saddle dtweedie_dlogfdphi dtweedie_logl dtweedie_dldphi dtweedie_logl_saddle dtweedie_series_bigp dtweedie_series_smallp logLiktweedie stored_grids twcomputation sort_notation check_inputs special_cases
-#' @title Tweedie internal function
-#' @description Internal tweedie functions. \bold{These are not to be called by the user.}
-#'
-#' @usage
-#' dtweedie_dlogfdphi(y, mu, phi, power)
-#' dtweedie_logl(phi, y, mu, power)
-#' dtweedie_logl_saddle( phi, power, y, mu, eps=0)
-#' dtweedie_logv_bigp( y, phi, power)
-#' dtweedie_logw_smallp(y, phi, power)
-#' dtweedie_interp(grid, nx, np, xix.lo, xix.hi,p.lo, p.hi, power, xix)
-#' dtweedie_jw_smallp(y, phi, power )
-#' dtweedie_kv_bigp(y, phi, power)
-#' dtweedie_series_bigp(power, y, mu, phi)
-#' dtweedie_series_smallp(power, y, mu, phi)
-#' stored_grids(power)
-#' check_inputs(y, mu, phi, power, type = "standard")
-#' sort_notation(xi = NULL, power = NULL)
-#' special_cases(y, mu, phi, power, type="PDF", verbose = FALSE)
-#'
-#'
-#' @param y the vector of responses.
-#' @param y the vector of responses.
-#' @param power the value of \eqn{p}{power} such that the variance is \eqn{\mbox{var}[Y]=\phi\mu^p}{var(Y) = phi * mu^power}.
-#' @param xi a synonym for \code{power}.
-#' @param mu the mean parameter \eqn{\mu}{mu}.
-#' @param phi the dispersion \eqn{\phi}{phi}.
-#' @param grid the interpolation grid necessary for the given value of \eqn{p}{power}.
-#' @param nx the number of interpolation points in the \eqn{\xi}{xi} dimension.
-#' @param np the number of interpolation points in the \eqn{p}{power}-dimension.
-#' @param xix.lo the lower value of the transformed \eqn{\xi}{xi} value used in the interpolation grid. (Note that the value of \eqn{\xi}{xi} is from \eqn{0} to \eqn{\infty}{infty}, and is transformed such that it is on the range \eqn{0} to \eqn{1}.)
-#' @param xix.hi the higher value of the transformed \eqn{\xi}{xi} value used in the interpolation grid.
-#' @param p.lo the lower value of the \eqn{p} value used in the interpolation grid.
-#' @param p.hi the higher value of the \eqn{p} value used in the interpolation grid.
-#' @param xix the value of the transformed \eqn{\xi}{xi} at which a value is sought.
-#' @param verbose logical; if \code{TRUE}, some details of the algorithm are returned.
-#' @param type description
-#' @param eps the offset in computing the variance function in the saddlepoint approximation. The default is \code{eps=1/6} (as suggested by Nelder and Pregibon, 1987).
-#' @param type in \code{check_inputs}, the type of function for which inputs should be checked (one of \code{"standard"} (for \code{dtweedie} and \code{ptweedie}; the default), \code{"random"} (for \code{rtweedie}) or \code{"quantile"} (for \code{qtweedie})); in \code{special_cases}, one of \code{"PDF"} (the probability density function; the default) or \code{"CDF"} (the cumulative distribution function).
-#'
-#' @author Peter Dunn (\email{pdunn2@usc.edu.au})
-#' 
-#' @references
-#' Dunn, P. K. and Smyth, G. K. (2008).
-#' Evaluation of Tweedie exponential dispersion model densities by Fourier inversion.
-#' \emph{Statistics and Computing}, 
-#' \bold{18}, 73--86.
-#' \doi{10.1007/s11222-007-9039-6}
-#' 
-#' Dunn, Peter K and Smyth, Gordon K (2005).
-#' Series evaluation of Tweedie exponential dispersion model densities
-#' \emph{Statistics and Computing},
-#' \bold{15}(4). 267--280.
-#' \doi{10.1007/s11222-005-4070-y}
-#' 
-#' Jorgensen, B. (1997).
-#' \emph{Theory of Dispersion Models}.
-#' Chapman and Hall, London.
-#'
-#' 	Nelder, J. A. and Pregibon, D. (1987).
-#' 	An extended quasi-likelihood function
-#' 	\emph{Biometrika},
-#' 	\bold{74}(2), 221--232.
-#' 	\doi{10.1093/biomet/74.2.221}
-#' 	
-#' @keywords internal
 
-
+#' @noRd
 dtweedie_dldphi_saddle <- function(phi, mu, power, y){
   # Calculates the derivative of log f wrt phi
   # where the density is the saddlepoint density
@@ -89,7 +20,7 @@ dtweedie_dldphi_saddle <- function(phi, mu, power, y){
 
 #############################################################################
 
-
+#' @noRd
 dtweedie_logl <- function(phi, y, mu, power) {
   # Computes the log-likelihood for
   # a Tweedie density.  
@@ -107,7 +38,7 @@ dtweedie_logl <- function(phi, y, mu, power) {
 
 #############################################################################
 
-
+#' @noRd
 logLiktweedie <- function(glm.obj, dispersion = NULL) {
   # Computes the log-likelihood for
   # a Tweedie glm.  
@@ -127,6 +58,7 @@ logLiktweedie <- function(glm.obj, dispersion = NULL) {
 
 #############################################################################
 
+#' @noRd
 dtweedie_logl_saddle <- function( phi, power, y, mu, eps=0){
   # Calculates the log likelihood of Tweedie densities
   # where the density is the saddlepoint density
@@ -146,7 +78,7 @@ dtweedie_logl_saddle <- function( phi, power, y, mu, eps=0){
 
 #############################################################################
 
-
+#' @noRd
 dtweedie_series_bigp <- function(power, y, mu, phi){ 
   
   # 
@@ -197,6 +129,7 @@ dtweedie_series_bigp <- function(power, y, mu, phi){
 
 #############################################################################
 
+#' @noRd
 dtweedie_dldphi <- function(phi, mu, power, y ){
   # Calculates the log-likelihood
   # function, wrt phi, for p>2.  In particular, it returns
@@ -252,6 +185,7 @@ dtweedie_dldphi <- function(phi, mu, power, y ){
 
 #############################################################################
 
+#' @noRd
 dtweedie_dlogfdphi <- function(y, mu, phi, power)
 {
   #
@@ -345,5 +279,8 @@ dtweedie_dlogfdphi <- function(y, mu, phi, power)
 }
 
 
+
+
+#############################################################################
 
 

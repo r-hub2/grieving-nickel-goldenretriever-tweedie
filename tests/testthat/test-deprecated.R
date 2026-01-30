@@ -19,7 +19,8 @@ test_that("Deprecated functions work", {
     tweedie.plot(1, mu = 1, phi = 1, power = 1.5)  
   )
   expect_warning({
-    y <- rgamma(50, shape = 1.2, rate = 1.1)
+    set.seed(1000)
+    y <- rgamma(30, shape = 1.2, rate = 1.1)
     tweedie.profile(formula = (y ~ 1), 
                     data = data.frame(y = y ),
                     p.vec = seq(1.5, 2.5, length = 10),
@@ -29,8 +30,8 @@ test_that("Deprecated functions work", {
                     do.ci = FALSE, 
                     method = "interpolation",
                     do.points = FALSE,
-                    phi.method = "mle") 
-  }
+                    phi.method = "mle")},
+    regexp = "deprecated"
   )
   expect_warning(
     tweedie.plot(y = seq(0, 10, by = 1),
@@ -39,6 +40,7 @@ test_that("Deprecated functions work", {
                  power = 1.5)
   )
   expect_warning({
+    set.seed(1000)
     y <- rgamma(10, shape = 1.4, scale = 1.5)
     mod1 <- glm(y ~ 1, family=statmod::tweedie(link.power = 0, 
                                                var.power = 2) )

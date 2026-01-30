@@ -11,7 +11,7 @@ SUBROUTINE GaussQuadrature(i, a, b, integral_result)
   REAL(KIND=C_DOUBLE), INTENT(OUT)  :: integral_result
   INTEGER(C_INT), INTENT(IN)        :: i
 
-  INTEGER                                        :: j, npoints
+  INTEGER(C_INT)                                 :: j, npoints
   REAL(KIND=C_DOUBLE)                            :: xu, xl, fl, fu
   
   !!! NOTE: Guassian abscicca and weights in gaussian_data_mod

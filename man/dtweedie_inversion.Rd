@@ -5,28 +5,30 @@
 \alias{dtweedie.inversion}
 \title{Fourier Inversion Evaluation for the Tweedie Probability Function}
 \usage{
-dtweedie_inversion(y, power, mu, phi, method = 3, verbose = FALSE, details = FALSE)
+dtweedie_inversion(y, mu, phi, power, method = 3, verbose = FALSE, 
+                          details = FALSE, IGexact = TRUE)
+
+dtweedie.inversion(y, power, mu, phi, method = 3, verbose, details)
 }
 \arguments{
 \item{y}{vector of quantiles.}
 
-\item{power}{scalar; the power parameter \eqn{p}{power}.}
-
 \item{mu}{the mean parameter \eqn{\mu}{mu}.}
 
 \item{phi}{the dispersion parameter \eqn{\phi}{phi}.}
+
+\item{power}{scalar; the power parameter \eqn{p}{power}.}
 
 \item{method}{the method to use; one of \code{1}, \code{2}, or \code{3} (the default).}
 
 \item{verbose}{logical; if \code{TRUE}, display some internal computation details. The default is \code{FALSE}.}
 
 \item{details}{logical; if \code{TRUE}, return a list with basic details of the integration. The default is \code{FALSE}.}
+
+\item{IGexact}{logical; if \code{TRUE} (the default), evaluate the inverse Gaussian distribution using the 'exact' values, otherwise uses inversion.}
 }
 \value{
 A numeric vector of densities if \code{details=FALSE}; if \code{details=TRUE}, return a list with \code{density} (the density values), \code{regions} (the number of integration regions used) and \code{methods} (which of the three methods was used).
-
-For special cases of \eqn{p} (i.e., \eqn{p = 0, 1, 2, 3}), where no inversion is needed, \code{regions} and \code{method} are set to \code{NA} for all values of \code{y}.
-For special cases of \code{y} for other values of \eqn{p} (i.e., \eqn{P(Y = 0)}), \code{regions} and \code{method} are set to \code{NA}.
 }
 \description{
 Evaluates the probability density function (\acronym{pdf}) for Tweedie distributions using Fourier inversion, 
@@ -34,12 +36,17 @@ for given values of the dependent variable \code{y}, the mean \code{mu}, dispers
 \emph{Not usually called by general users}, but can be used in the case of evaluation problems.
 }
 \note{
+The 'exact' values for the inverse Gaussian distribution are not really exact, but evaluated using inverse normal distributions,
+for which very good numerical approximation are available in R.
+For special cases of \eqn{p} (i.e., \eqn{p = 0, 1, 2, 3}), where no inversion is needed, \code{regions} and \code{method} are set to \code{NA} for all values of \code{y}.
+For special cases of \code{y} for other values of \eqn{p} (i.e., \eqn{P(Y = 0)}), \code{regions} and \code{method} are set to \code{NA}.
+
 The three methods are described in Dunn & Smyth (2008).
 }
 \examples{
 # Plot a Tweedie density
 y <- seq(0, 5, length = 100)
-fy <- dtweedie_inversion(y, power = 1.1, mu = 1, phi = 1)
+fy <- dtweedie_inversion(y, mu = 1, phi = 1, power = 1.1)
 plot(y, fy, type = "l", lwd = 2, ylab = "Density")
 
 }

@@ -1,5 +1,5 @@
-#' Plot Tweedie Density Functions
-#'
+#' @title Plot Tweedie Models
+#' @name tweedie_plot
 #' @description This function produced a plot of the specified Tweedie distribution.
 #'
 #' @usage tweedie_plot(y, xi = NULL, mu, phi, type = "pdf", power = NULL, add = FALSE, ...)
@@ -19,9 +19,10 @@
 #' y <- seq(0, 5, length = 100)
 #' tweedie_plot(y, power = 1.1, mu = 1, phi = 1)
 #' 
-#' @aliases tweedie.plot
 #' 
 #' @importFrom graphics lines rug par mtext abline axis  points plot
+#'
+#' @export
 tweedie_plot <- function(y, xi = NULL, mu, phi, type = "pdf", power = NULL, 
                          add =FALSE, ...) {
   
@@ -102,11 +103,16 @@ tweedie_plot <- function(y, xi = NULL, mu, phi, type = "pdf", power = NULL,
 }
 
 
-  
+
+
+
+#' @rdname tweedie_plot
 #' @export
 tweedie.plot <- function(y, xi = NULL, mu, phi, type = "pdf", power = NULL, 
                          add =FALSE, ...){
-  .Deprecated("tweedie.plot", package = "tweedie")
+  lifecycle::deprecate_warn(when = "3.0.5", 
+                            what = "tweedie.plot()", 
+                            with = "tweedie_plot()")
   if ( is.null(power)) power <- xi
   tweedie_plot(y = y, 
               power = power, 

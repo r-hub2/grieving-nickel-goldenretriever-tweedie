@@ -1,5 +1,5 @@
-#' Display Integrand Information for Tweedie Fourier inversion
-#' 
+#' @title Display Integrand Information for Tweedie Fourier inversion
+#' @name tweedie_integrand
 #' @description Plots the integrand for Fourier inversion and the real and imaginary parts separately.
 #'
 #' @usage
@@ -55,6 +55,7 @@
 #' 
 #' @importFrom graphics par mtext abline axis lines
 #' @keywords models
+#' 
 #' @export
 tweedie_integrand <- function(y, power, mu, phi, 
                               t = seq(0, 5, length = 200), 

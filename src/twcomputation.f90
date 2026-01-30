@@ -3,10 +3,10 @@ SUBROUTINE twcomputation(N, p, phi, y, mu, verbose, pdf, funvalue, exitstatus, r
   USE ISO_C_BINDING, ONLY: C_INT, C_DOUBLE
 
   IMPLICIT NONE
-  INTEGER(C_INT), INTENT(IN)  :: N, verbose, pdf
-  REAL(C_DOUBLE), INTENT(IN)  :: p, phi(N), y(N), mu(N)
-  REAL(C_DOUBLE), INTENT(OUT) :: funvalue(N), relerr
-  INTEGER(C_INT), INTENT(OUT) :: exitstatus, its(N)
+  INTEGER(C_INT), INTENT(IN)        :: N, verbose, pdf
+  REAL(KIND=C_DOUBLE), INTENT(IN)   :: p, phi(N), y(N), mu(N)
+  REAL(KIND=C_DOUBLE), INTENT(OUT)  :: funvalue(N), relerr
+  INTEGER(C_INT), INTENT(OUT)       :: exitstatus, its(N)
 
 
   ! Call internal Fortran routine

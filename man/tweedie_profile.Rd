@@ -3,7 +3,7 @@
 \name{tweedie_profile}
 \alias{tweedie_profile}
 \alias{tweedie.profile}
-\title{Profile likelihood estimate of Tweedie variance index parameter}
+\title{Profile Likelihood Estimate of Tweedie Variance Index Parameter}
 \usage{
 tweedie_profile(formula, p.vec = NULL, xi.vec = NULL, link.power = 0, 
   data, weights = 1, offset = 0, fit.glm = FALSE, do.smooth = TRUE, 
@@ -13,6 +13,29 @@ tweedie_profile(formula, p.vec = NULL, xi.vec = NULL, link.power = 0,
   do.points = do.plot, method = "inversion", conf.level = 0.95, 
   phi.method = ifelse(method == "saddlepoint", "saddlepoint", "mle"), 
   verbose = FALSE, add0 = FALSE)
+
+tweedie.profile(
+  formula,
+  p.vec = NULL,
+  xi.vec = NULL,
+  link.power = 0,
+  data,
+  weights = 1,
+  offset = 0,
+  fit.glm = FALSE,
+  do.smooth = TRUE,
+  do.plot = FALSE,
+  do.ci = do.smooth,
+  eps = 1/6,
+  control = list(epsilon = 1e-09, maxit = stats::glm.control()$maxit, trace =
+    glm.control()$trace),
+  do.points = do.plot,
+  method = "inversion",
+  conf.level = 0.95,
+  phi.method = ifelse(method == "saddlepoint", "saddlepoint", "mle"),
+  verbose = FALSE,
+  add0 = FALSE
+)
 }
 \arguments{
 \item{formula}{a formula expression as for other regression models and
@@ -47,7 +70,7 @@ The default is \code{FALSE}.}
 
 \item{do.ci}{logical; if \code{TRUE}, the nominal \code{100*conf.level} is computed.
 Defaults to the value of \code{do.smooth}. 
-Confidence intervals are ony computed if \code{do.smooth = TRUE}.}
+Confidence intervals are only computed if \code{do.smooth = TRUE}.}
 
 \item{eps}{the offset in computing the variance function. Default is \code{1/6} (as recommended by Nelder and Pregibon, 1987).
 \code{eps} is ignored unless \code{method = "saddlepoint"}.}
@@ -99,11 +122,10 @@ and smoothing can be used.
 \examples{
 data(Loblolly)
 out <- tweedie_profile(height~age, data = Loblolly, 
-          do.plot = FALSE, p.vec = seq(3.5, 4.5, length = 11) )
+          do.plot = FALSE, p.vec = seq(3.5, 4.5, length = 7) )
 # The estimate for the variance power index (p, or xi) is:
 out$p.max
 
-#' @importFrom methods is
 }
 \references{
 Dunn, P. K. and Smyth, G. K. (2018).

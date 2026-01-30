@@ -6,6 +6,8 @@
 \title{Unit Deviance for a Tweedie Distribution}
 \usage{
 tweedie_dev(y, mu, power)
+
+tweedie.dev(y, mu, power)
 }
 \arguments{
 \item{y}{vector of quantiles.}

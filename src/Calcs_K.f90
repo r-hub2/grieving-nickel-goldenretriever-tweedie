@@ -1,8 +1,8 @@
+
 MODULE Calcs_K
 
-
   USE tweedie_params_mod
-  USE ISO_C_BINDING, ONLY: C_INT, C_DOUBLE
+  USE ISO_C_BINDING, ONLY: C_INT, C_DOUBLE, C_BOOL
 
   IMPLICIT NONE
   
@@ -13,9 +13,9 @@ CONTAINS
   
   
   
-  SUBROUTINE findKmax(i, kmax, tmax, mmax, mfirst, leftOfMax)
+  SUBROUTINE findKmax(i, kmax, tmax, mmax, mfirst, left_Of_Max)
     ! Finds the value of Kmax, Tmax, and Mmax.
-    ! Also return the first value of m (mfirst) amd whether this is to the left of the max (leftOfMax).
+    ! Also return the first value of m (mfirst) amd whether this is to the left of the max (left_Of_Max).
   
     USE tweedie_params_mod
     USE ISO_C_BINDING, ONLY: C_INT, C_DOUBLE, C_BOOL
@@ -25,7 +25,7 @@ CONTAINS
     
     REAL(KIND=C_DOUBLE), INTENT(OUT)    :: kmax, tmax
     INTEGER(C_INT), INTENT(OUT)         :: mmax, mfirst
-    LOGICAL(C_BOOL), INTENT(OUT)        :: leftOfMax
+    LOGICAL(C_BOOL), INTENT(OUT)        :: left_Of_Max
     INTEGER(C_INT), INTENT(IN)          :: i
   
     REAL(KIND=C_DOUBLE)     :: pi, t_Start_Point, slope_At_Zero, Imk_value
@@ -67,7 +67,7 @@ CONTAINS
       mfirst = -1
       kmax = 0.0_C_DOUBLE
       tmax = 0.0_C_DOUBLE
-      leftOfMax = .FALSE.
+      left_Of_Max = .FALSE.
       
       RETURN
     ELSE
@@ -155,15 +155,15 @@ CONTAINS
       ! Establish the first value of m to use, and whether the first zero is to the left of kmax
       IF (mmax .GT. 0) THEN
         mfirst = 1
-        leftOfMax = .TRUE.
+        left_Of_Max = .TRUE.
       ELSE
         IF (mmax .EQ. 0 ) THEN
           mfirst = 0
-          leftOfMax = .FALSE.
+          left_Of_Max = .FALSE.
         ELSE
           ! That is, mmax is LESS THAN 0
           mfirst = -1
-          leftOfMax = .FALSE.
+          left_Of_Max = .FALSE.
         ENDIF 
       END IF
     END IF
@@ -176,8 +176,8 @@ CONTAINS
       
         IMPLICIT NONE
     
-        REAL(C_DOUBLE)              :: t0, pi
-        REAL(C_DOUBLE)              :: ratio, r, t_small, t_large, c, angle
+        REAL(KIND=C_DOUBLE)     :: t0, pi
+        REAL(KIND=C_DOUBLE)     :: ratio, r, t_small, t_large, c, angle
       
         pi = 4.0_C_DOUBLE * DATAN(1.0_C_DOUBLE)
       
@@ -412,7 +412,7 @@ CONTAINS
 
   
   
-  SUBROUTINE improveKZeroBounds(i, m, leftOfMax, zeroMid, zeroL, zeroR)
+  SUBROUTINE improveKZeroBounds(i, m, left_Of_Max, zeroMid, zeroL, zeroR)
     ! Improve the bounds that bracket the zero of Im k(t).
     ! A decent starting point is sometimes crucial to timely convergence.
     
@@ -425,7 +425,7 @@ CONTAINS
     REAL(KIND=C_DOUBLE), INTENT(INOUT)  :: zeroMid
     INTEGER(C_INT), INTENT(IN)          :: i, m
     REAL(KIND=C_DOUBLE), INTENT(INOUT)  :: zeroL, zeroR
-    LOGICAL(C_BOOL), INTENT(IN)         :: leftOfMax
+    LOGICAL(C_BOOL), INTENT(IN)         :: left_Of_Max
   
     REAL(KIND=C_DOUBLE)     :: current_y, current_mu, current_phi
     REAL(KIND=C_DOUBLE)     :: valueL, valueR, multiplier
@@ -446,7 +446,7 @@ CONTAINS
     ! Set multipier: this adjust the sign depending on whether we are
     ! left of the max (so left bound is negative) or to the right of
     ! the max (so left bound is positive)
-    IF (leftOfMax) THEN
+    IF (left_Of_Max) THEN
       multiplier = -1.0E0_C_DOUBLE
     ELSE
       multiplier = 1.0E0_C_DOUBLE
@@ -471,7 +471,7 @@ CONTAINS
   
       ! The solution depends on what side of the max we are.
       ! If to the LEFT of the max of Im k(t), zeroL should give a -ive value; zeroR a +ive value.
-      IF ( leftOfMax) THEN
+      IF ( left_Of_Max) THEN
         DO WHILE ( valueL .GT. 0.0_C_DOUBLE) 
           ! We are on the LEFT of the maximum of Im k(t), but the L bound gives a +ive value.
           ! So we need to go LEFT a little.
@@ -497,7 +497,7 @@ CONTAINS
   
       ! The solution depends on what side of the max we are.
       ! If to the RIGHT of the max of Im k(t), zeroL should give a +ive value; zeroR a -ive value.
-      IF ( .NOT.(leftOfMax) ) THEN
+      IF ( .NOT.(left_Of_Max) ) THEN
         DO WHILE ( valueL .LT. 0.0_C_DOUBLE) 
           ! We are on the RIGHT of the maximum of Im k(t), but the L bound gives a -ive value.
           ! So we need to go LEFT a little.
@@ -554,9 +554,10 @@ CONTAINS
   END SUBROUTINE improveKZeroBounds
   
   
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   
   
-  SUBROUTINE advanceM(i, m, mmax, mOld, leftOfMax, flip_To_Other_Side)
+  SUBROUTINE advanceM(i, m, mmax, mOld, left_Of_Max)
       ! Determine the next value of m, for solving the zeros of the integrand
       
       USE ISO_C_BINDING, ONLY: C_INT, C_DOUBLE, C_BOOL
@@ -566,10 +567,13 @@ CONTAINS
       INTEGER(C_INT), INTENT(IN)        :: mmax, i    ! Maximum value m can take, and current index
       INTEGER(C_INT), INTENT(INOUT)     :: m          ! M index (used for calculation and C-binding)
       INTEGER(C_INT), INTENT(OUT)       :: mOld       ! Previous index value
-      LOGICAL(C_BOOL), INTENT(INOUT)    :: leftOfMax  ! True if on the left side of kmax
-      LOGICAL(C_BOOL), INTENT(INOUT)    :: flip_To_Other_Side       ! True if cross from left to right
-      
-      REAL(KIND=C_DOUBLE)           :: current_y, current_mu, current_phi
+      LOGICAL(C_BOOL), INTENT(INOUT)    :: left_Of_Max  ! True if on the left side of kmax
+
+      ! Local vars      
+      REAL(KIND=C_DOUBLE)               :: current_y, current_mu, current_phi
+      LOGICAL(C_BOOL)                   :: flip_To_Other_Side
+        ! flip_To_Other_Side. is  .TRUE.  if the value of  m  crosses from the 
+        ! left of  mmax   to the right of  mmax
     
     
       ! Grab the relevant scalar values for this iteration:
@@ -579,16 +583,18 @@ CONTAINS
     
       mOld = m
       flip_To_Other_Side = .FALSE.
+        ! flip_To_Other_Side signals that m has just crossed mmax;
+        ! update integration side exactly once
 
       IF (current_y .GE. current_mu) THEN
         ! Always heading downwards (away from kmax), so easy
         m = m - 1 
       ELSE
         ! We have a maximum (kmax) to consider
-        IF (leftOfMax) THEN
+        IF (left_Of_Max) THEN
           IF (m == mmax) THEN 
             ! Move to the other side of the maximum
-            leftOfMax = .FALSE.
+            left_Of_Max = .FALSE.
             flip_To_Other_Side = .TRUE.
             ! NOTE: The value of m does not change for this iteration; 
             ! same value, just on other side of max
@@ -596,22 +602,22 @@ CONTAINS
             ! Continue towards the maximum
             m = m + 1
             ! mOld is already saved before the IF block
-            leftOfMax = .TRUE. ! Still on the left side
+            left_Of_Max = .TRUE. ! Still on the left side
           END IF
         ELSE
           ! When on the RIGHT of the maximum, can always just reduce m by one
           m = m - 1 
-          leftOfMax = .FALSE.
+          left_Of_Max = .FALSE.
         END IF
       END IF
 !WRITE(*,*) " - Moving m from ", mOld, 'to', m
     END SUBROUTINE advanceM
     
     
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     
     
-    
-    SUBROUTINE findExactZeros(i, m, tL, tR, tStart, tZero, leftOfMax) 
+    SUBROUTINE findExactZeros(i, m, tL, tR, tStart, tZero, left_Of_Max) 
   ! Find the exact zeros of the integrand
   
   USE tweedie_params_mod
@@ -624,7 +630,7 @@ CONTAINS
   INTEGER(C_INT), INTENT(IN)          :: i, m
   REAL(KIND=C_DOUBLE), INTENT(INOUT)  :: tL, tR, tStart
   REAL(KIND=C_DOUBLE), INTENT(OUT)    :: tZero
-  LOGICAL(C_BOOL), INTENT(IN)         :: leftOfMax
+  LOGICAL(C_BOOL), INTENT(IN)         :: left_Of_Max
 
   REAL(KIND=C_DOUBLE)   :: xacc, fL, fR, dfL, dfR, tstart_update, tMid
   REAL(KIND=C_DOUBLE)   :: current_y, current_mu, current_phi
@@ -653,7 +659,7 @@ CONTAINS
     ! Then bounds do not bound the zero
      tMid = (tL + tR) / 2.0_C_DOUBLE
  
-    CALL improveKZeroBounds(i, m, leftOfMax, tMid, tL, tR)
+    CALL improveKZeroBounds(i, m, left_Of_Max, tMid, tL, tR)
     IF (Cverbose) CALL DBLEPR("Bounds do not bracket the zero (findExactZeros)", -1, fR, 1)
   END IF
   ! For robustness, use rtsafe when the  distance between zeros 
@@ -663,13 +669,14 @@ CONTAINS
     IF (error) CALL DBLEPR("ERROR: cannot solve", -1, tZero, 1)
   ELSE IF ( (Cpsmall) .AND. (current_y .LT. current_mu) ) THEN
     ! When small p and small y, fight harder for good starting bounds
-    CALL improveKZeroBounds(i, m, leftOfMax, tStart, tL, tR)
+    CALL improveKZeroBounds(i, m, left_Of_Max, tStart, tL, tR)
     CALL rtsafe(i, evaluateImkM_wrapper, tL, tR, xacc, tZero, error)
     IF (error) CALL DBLEPR("ERROR: cannot solve", -1, tZero, 1)
   ELSE
     ! Default to rtnewton for "easy" cases (e.g., initial zeros)
     tstart_update = (tL + tR) / 2.0_C_DOUBLE
-    CALL rtnewton(i, evaluateImkM_wrapper, tstart_update, xacc, tZero)
+!    CALL rtnewton(i, evaluateImkM_wrapper, tstart_update, xacc, tZero)
+    CALL rtsafe(i, evaluateImkM_wrapper, tL, tR, xacc, tZero, error)
   END IF
   
 
@@ -682,9 +689,9 @@ CONTAINS
       USE ISO_C_BINDING, ONLY: C_INT, C_DOUBLE
       ! Has access to variable  m  from the containing function/outer scope
       
-      INTEGER(C_INT), INTENT(IN)  :: i
-      REAL(C_DOUBLE), INTENT(IN)  :: x
-      REAL(C_DOUBLE), INTENT(OUT) :: f, df
+      INTEGER(C_INT), INTENT(IN)        :: i
+      REAL(KIND=C_DOUBLE), INTENT(IN)   :: x
+      REAL(KIND=C_DOUBLE), INTENT(OUT)  :: f, df
      
       CALL evaluateImkM(i, x, f, df, m) ! Pass the captured 'm' value]
 
@@ -693,10 +700,6 @@ CONTAINS
   
 END SUBROUTINE findExactZeros
 
-
-
-
-  
   
 END MODULE Calcs_K
 

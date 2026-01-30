@@ -6,6 +6,8 @@
 \title{Series Evaluation for the Tweedie Distribution Function}
 \usage{
 ptweedie_series(q, power, mu, phi, verbose = FALSE, details = FALSE)
+
+ptweedie.series(q, power, mu, phi, verbose = FALSE, details = FALSE)
 }
 \arguments{
 \item{q}{vector of quantiles.}
@@ -29,6 +31,10 @@ with \eqn{1 < p < 2}{1 < p < 2}
 using an infinite series, for given values of the dependent variable \code{y}, 
 the mean \code{mu}, dispersion \code{phi}, and power parameter \code{power}.
 \emph{Not usually called by general users}, but can be in the case of evaluation problems.
+}
+\note{
+The 'exact' values for the inverse Gaussian distribution are not really exact, but evaluated using inverse normal distributions,
+for which very good numerical approximation are available in R.
 }
 \examples{
 # Plot a Tweedie distribution function

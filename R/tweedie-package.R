@@ -7,5 +7,6 @@
 #' 
 #' @useDynLib tweedie, .registration = TRUE
 #' @import methods
+#' @importFrom lifecycle deprecate_warn
 #' @export
 "_PACKAGE"

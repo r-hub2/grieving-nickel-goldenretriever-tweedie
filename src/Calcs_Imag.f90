@@ -1,7 +1,8 @@
+
 MODULE Calcs_Imag
 
   USE tweedie_params_mod
-  USE ISO_C_BINDING, ONLY: C_INT, C_DOUBLE
+  USE ISO_C_BINDING, ONLY: C_INT, C_DOUBLE, C_BOOL
 
   IMPLICIT NONE
   

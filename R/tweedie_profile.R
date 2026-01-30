@@ -1,5 +1,5 @@
-#' Profile likelihood estimate of Tweedie variance index parameter
-#' 
+#' @title Profile Likelihood Estimate of Tweedie Variance Index Parameter
+#' @name tweedie_profile
 #' @description This function profiles the (log-)likelihood over a vector of
 #'   Tweedie power-index parameter (denoted \eqn{p}{power} or \eqn{\xi}{xi}) to find the maximum
 #'   likelihood estimate (MLE) of the index parameter \eqn{p} (or equivalently \eqn{\xi}{xi}).
@@ -59,7 +59,7 @@
 #'   The default is \code{FALSE}.
 #' @param do.ci logical; if \code{TRUE}, the nominal \code{100*conf.level} is computed.
 #'   Defaults to the value of \code{do.smooth}. 
-#'   Confidence intervals are ony computed if \code{do.smooth = TRUE}.
+#'   Confidence intervals are only computed if \code{do.smooth = TRUE}.
 #' @param eps the offset in computing the variance function. Default is \code{1/6} (as recommended by Nelder and Pregibon, 1987).
 #'   \code{eps} is ignored unless \code{method = "saddlepoint"}.
 #' @param control a list of parameters for controlling the fitting process;
@@ -80,16 +80,13 @@
 #' @examples 
 #' data(Loblolly)
 #' out <- tweedie_profile(height~age, data = Loblolly, 
-#'           do.plot = FALSE, p.vec = seq(3.5, 4.5, length = 11) )
+#'           do.plot = FALSE, p.vec = seq(3.5, 4.5, length = 7) )
 #' # The estimate for the variance power index (p, or xi) is:
 #' out$p.max
 #' 
-#' #' @importFrom methods is
 #' @importFrom graphics lines rug points par mtext abline axis  points
-#' @importFrom stats contrasts fitted optimise glm.fit splinefun glm.control deviance deviance uniroot
+#' @importFrom stats contrasts fitted optimize glm.fit splinefun glm.control deviance deviance uniroot
 #' 
-#' @aliases tweedie.profile
-#'
 #' @keywords  models
 #' 
 #' @export
@@ -326,7 +323,7 @@ tweedie_profile <- function(formula,
     
     
     skip.obs <- FALSE
-    if ( is( catch.possible.error, "try-error" ) ) {
+    if ( inherits( catch.possible.error, "try-error" ) ) {
       skip.obs <- TRUE 
     }
     
@@ -353,7 +350,7 @@ tweedie_profile <- function(formula,
     } else {
       if ( phi.method == "mle"){
         
-        if (verbose >= 1) cat(" (using optimise): ")
+        if (verbose >= 1) cat(" (using optimize): ")
         
         # Saddlepoint approx of phi:
         phi.saddle <- sum( tweedie_dev(y = ydata, 
@@ -377,7 +374,7 @@ tweedie_profile <- function(formula,
         #                hessian=FALSE,
         #                power=p, mu=mu, y=data)
         if ( p != 0 ) {
-          ans <- optimise(f = dtweedie_nlogl, 
+          ans <- optimize(f = dtweedie_nlogl, 
                           maximum = FALSE, 
                           interval = c(low.limit, 
                                        10 * phi.est),
@@ -437,13 +434,13 @@ tweedie_profile <- function(formula,
               # of  ydata  are multiples of  phi
               y.on.phi <- ydata/phi
               close.enough <- array( dim = length(y.on.phi))
-              for (i in (1 : length(y.on.phi))){
+              for (j in (1 : length(y.on.phi))){
                 if (isTRUE(all.equal(y.on.phi, 
                                      as.integer(y.on.phi)))){
-                  L[i] <- sum( log( dpois(x = round(y / phi), 
+                  L[j] <- sum( log( dpois(x = round(y / phi), 
                                           lambda = mu / phi ) ) )
                 } else {
-                  L[i] <- 0
+                  L[j] <- 0
                 }
               }
             }
@@ -677,7 +674,7 @@ tweedie_profile <- function(formula,
                                offset = offset,
                                family = statmod::tweedie(xi.max, 
                                                          link.power = link.power)))
-        phi.max <- optimise( f = dtweedie_nlogl, 
+        phi.max <- optimize( f = dtweedie_nlogl, 
                              maximum = FALSE, 
                              interval = c(phi.lo, phi.hi ), 
                              # set lower limit phi.lo???
@@ -854,36 +851,44 @@ tweedie_profile <- function(formula,
 
 
 
-  
-
+#' @rdname tweedie_profile
 #' @export
-tweedie.profile <- function(formula, p.vec = NULL, xi.vec = NULL, link.power = 0, 
-                               data, weights, offset, fit.glm = FALSE, 
-                               do.smooth = TRUE, do.plot = FALSE, 
-                               do.ci = do.smooth, eps = 1/6,
-                               control = list( epsilon = 1e-09, maxit = stats::glm.control()$maxit, trace = glm.control()$trace ),
-                               do.points = do.plot, method = "inversion", conf.level = 0.95, 
-                               phi.method = ifelse(method == "saddlepoint", "saddlepoint", "mle"), verbose = FALSE, add0 = FALSE){ 
-  .Deprecated("tweedie_profile", package = "tweedie")
-  tweedie_profile(formula = formula, 
-                  p.vec = p.vec,
-                  xi.vec = xi.vec,
-                  link.power = link.power,
-                  data = data,
-                  weights = NULL,
-                  offset = NULL,
-                  fit.glm = fit.glm,
-                  do.smooth = do.smooth,
-                  do.plot = do.plot,
-                  do.ci = do.ci,
-                  eps = eps,
-                  control = control,
-                  do.points = do.points,
-                  method = method,
-                  conf.level = conf.level,
-                  phi.method = phi.method,
-                  verbose = verbose,
-                  add0 = add0)
+tweedie.profile <- function(formula, 
+                            p.vec = NULL, 
+                            xi.vec = NULL, 
+                            link.power = 0, 
+                            data, 
+                            weights = 1, 
+                            offset = 0, 
+                            fit.glm = FALSE, 
+                            do.smooth = TRUE, 
+                            do.plot = FALSE, 
+                            do.ci = do.smooth, 
+                            eps = 1/6,
+                            control = list( epsilon = 1e-09, 
+                                            maxit = stats::glm.control()$maxit, 
+                                            trace = glm.control()$trace ),
+                            do.points = do.plot, 
+                            method = "inversion",
+                            conf.level = 0.95, 
+                            phi.method = ifelse(method == "saddlepoint", "saddlepoint", "mle"), 
+                            verbose = FALSE, 
+                            add0 = FALSE) { 
+  # 1. Signal the deprecation
+  lifecycle::deprecate_warn(
+    when = "3.0.5", 
+    what = "tweedie.profile()", 
+    with = "tweedie_profile()"
+  )
+  
+  # 2. Capture the call as the user wrote it
+  cl <- match.call()
+  
+  # 3. Change the name of the function to be called
+  cl[[1]] <- quote(tweedie::tweedie_profile)
+  
+  # 4. Execute it in the environment where tweedie.profile was called
+  eval(cl, parent.frame())
 }
 
 

@@ -3,9 +3,11 @@
 \name{tweedie_convert}
 \alias{tweedie_convert}
 \alias{tweedie.convert}
-\title{Tweedie Distribution: Converting Between Parameter Formats}
+\title{Tweedie Distribution: Convert Between Parameter Formats}
 \usage{
 tweedie_convert(xi = NULL, mu, phi, power = NULL)
+
+tweedie.convert(xi = NULL, mu, phi, power = NULL)
 }
 \arguments{
 \item{xi}{a synonym for \code{power}.}

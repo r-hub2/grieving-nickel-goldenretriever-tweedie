@@ -1,4 +1,4 @@
-citHeader("To cite tweedie in publications, please use the following articles:")
+header = "To cite tweedie in publications, please use the following articles as appropriate:"
 
 
 bibentry(
@@ -12,8 +12,6 @@ bibentry(
 	pages = "267-280",
 	textVersion = "Dunn, P. K. and Smyth, G. K. (2005).  Series evaluation of Tweedie exponential dispersion models. Statistics and Computing, 15(4), 267-280."
 )
-
-
 
 
 bibentry(
@@ -32,7 +30,7 @@ bibentry(
 	bibtype = "Manual",
 	author = "Peter K. Dunn",
  	year = 2022,
-  note = "R package version 2.3.5",
+  note = "R package version 3.0.5",
  	title = "Tweedie: Evaluation of Tweedie Exponential Family Models",
 	textVersion = "Dunn, P. K. (2022).  Tweedie: Evaluation of Tweedie exponential family models. R package version 2.3."
 

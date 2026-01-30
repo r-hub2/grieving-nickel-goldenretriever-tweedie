@@ -3,9 +3,11 @@
 \name{tweedie_AIC}
 \alias{tweedie_AIC}
 \alias{AICtweedie}
-\title{AIC for Tweedie glms}
+\title{AIC for Tweedie Glms}
 \usage{
 tweedie_AIC(glm.obj, dispersion = NULL, k = 2, verbose = TRUE)
+
+AICtweedie(glm.obj, dispersion = NULL, k = 2, verbose = TRUE)
 }
 \arguments{
 \item{glm.obj}{a fitted \code{glm} object, fitted using the \code{tweedie} family.}
@@ -35,10 +37,9 @@ Evaluating the likelihood can be time consuming, so the function may take some t
 }
 \examples{
 # Fit a Tweedie density using  tweedie  family function from  statmod
-library(statmod)
-pretend <- data.frame( y = rgamma(20, shape = 1, rate = 1) )
+pretend <- data.frame( y = stats::rgamma(20, shape = 1, rate = 1) )
 fit <- glm(y ~ 1, data = pretend, 
-           family = tweedie(link.power = 0, var.power = 2.1))
+           family = statmod::tweedie(link.power = 0, var.power = 2.1))
 
 # Compute the AIC
 tweedie_AIC(fit)

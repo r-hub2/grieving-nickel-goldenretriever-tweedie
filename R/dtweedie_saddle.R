@@ -1,5 +1,5 @@
-#' Tweedie densities evaluation using the saddlepoint approximation
-#' 
+#' @title Tweedie densities evaluation using the saddlepoint approximation
+#' @name dtweedie_saddle
 #' @description
 #' Density function for the Tweedie EMDs using a saddlepoint approximation.
 #' 
@@ -19,12 +19,8 @@
 #' plot(y, fy, type = "l", lwd = 2, ylab = "Density")
 #'
 #'
-#' @importFrom base pi
-#' 
 #' @keywords distribution
 #'
-#' @aliases dtweedie.saddle
-#' 
 #' @references
 #' Dunn, P. K. and Smyth, G. K. (2008).
 #' Evaluation of Tweedie exponential dispersion model densities by Fourier inversion.
@@ -43,7 +39,8 @@
 #' 	\emph{Biometrika},
 #' 	\bold{74}(2), 221--232.
 #' 	\doi{10.1093/biomet/74.2.221}
-#' 
+#'
+#' @keywords distribution
 #' @export
 dtweedie_saddle <- function(y, xi = NULL, mu, phi, eps = 1/6, power = NULL) {
 
@@ -121,9 +118,12 @@ dtweedie_saddle <- function(y, xi = NULL, mu, phi, eps = 1/6, power = NULL) {
 }
 
 
+#' @rdname dtweedie_saddle
 #' @export
 dtweedie.saddle <- function(y, xi = NULL, mu, phi, eps = 1/6, power = NULL){ 
-  .Deprecated("dtweedie_saddle", package = "tweedie")
+  lifecycle::deprecate_warn(when = "3.0.5", 
+                            what = "dtweedie.saddle()", 
+                            with = "dtweedie_saddle()")
   dtweedie_saddle(y, xi = NULL, mu, phi, eps = 1/6, power = NULL)
 }
 

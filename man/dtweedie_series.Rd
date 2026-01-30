@@ -3,9 +3,11 @@
 \name{dtweedie_series}
 \alias{dtweedie_series}
 \alias{dtweedie.series}
-\title{Series  Evaluation for the Tweedie Probability Function}
+\title{Series Evaluation for the Tweedie Probability Function}
 \usage{
 dtweedie_series(y, power, mu,phi)
+
+dtweedie.series(y, power, mu, phi)
 }
 \arguments{
 \item{y}{vector of quantiles.}

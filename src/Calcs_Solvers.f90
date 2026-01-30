@@ -1,7 +1,7 @@
 MODULE Calcs_Solvers
 
   USE tweedie_params_mod
-  USE ISO_C_BINDING, ONLY: C_INT, C_DOUBLE
+  USE ISO_C_BINDING, ONLY: C_INT, C_DOUBLE, C_BOOL
 
   IMPLICIT NONE
   PRIVATE
@@ -40,8 +40,8 @@ CONTAINS
     INTEGER(C_INT), INTENT(IN)        :: i
     REAL(KIND=C_DOUBLE)               :: root
     
-    INTEGER, PARAMETER        :: MAXITS = 100
-    INTEGER                   :: j
+    INTEGER(C_INT), PARAMETER :: MAXITS = 100
+    INTEGER(C_INT)            :: j
     REAL(KIND=C_DOUBLE)       :: dx, df, f, epsilon_f, epsilon_x, rel
     REAL(KIND=C_DOUBLE)       :: x_current, x_iter_old, factor, x_new
     

@@ -1,3 +1,4 @@
+
 SUBROUTINE twcomputation_main(N, p, phi, y, mu, verbose, pdf, funvalue, exitstatus, relerr, Int_Regions)
   ! Calls FORTRAN to compute the integral; set up common parameters
   USE tweedie_params_mod
@@ -5,15 +6,15 @@ SUBROUTINE twcomputation_main(N, p, phi, y, mu, verbose, pdf, funvalue, exitstat
 
   IMPLICIT NONE
 
-  INTEGER(C_INT), INTENT(IN)  :: N, verbose, pdf
-  REAL(C_DOUBLE), INTENT(IN)  :: p
-  REAL(C_DOUBLE), INTENT(IN)  :: phi(N), y(N), mu(N)
-  REAL(C_DOUBLE), INTENT(OUT) :: funvalue(N)
-  INTEGER(C_INT), INTENT(OUT) :: exitstatus
-  REAL(C_DOUBLE), INTENT(OUT) :: relerr
-  INTEGER(C_INT), INTENT(OUT) :: Int_Regions(N)
+  INTEGER(C_INT), INTENT(IN)        :: N, verbose, pdf
+  REAL(KIND=C_DOUBLE), INTENT(IN)   :: p
+  REAL(KIND=C_DOUBLE), INTENT(IN)   :: phi(N), y(N), mu(N)
+  REAL(KIND=C_DOUBLE), INTENT(OUT)  :: funvalue(N)
+  INTEGER(C_INT), INTENT(OUT)       :: exitstatus
+  REAL(KIND=C_DOUBLE), INTENT(OUT)  :: relerr
+  INTEGER(C_INT), INTENT(OUT)       :: Int_Regions(N)
   
-  INTEGER               :: i, Int_RegionsTMP
+  INTEGER(C_INT)        :: i, Int_RegionsTMP, istat
   REAL(KIND=C_DOUBLE)   :: funvalueTMP
 
   INTERFACE
@@ -25,11 +26,11 @@ SUBROUTINE twcomputation_main(N, p, phi, y, mu, verbose, pdf, funvalue, exitstat
       USE tweedie_params_mod
       
       IMPLICIT NONE
-      INTEGER, INTENT(IN)                       :: i
-      REAL(KIND=C_DOUBLE), INTENT(INOUT)        :: funvalueI
-      INTEGER, INTENT(OUT)                      :: exitstatus
+      INTEGER(C_INT), INTENT(IN)                :: i
+      REAL(KIND=C_DOUBLE), INTENT(OUT)          :: funvalueI
+      INTEGER(C_INT), INTENT(OUT)               :: exitstatus
       REAL(KIND=C_DOUBLE), INTENT(OUT)          :: relerr
-      INTEGER, INTENT(OUT)                      :: Int_Regions
+      INTEGER(C_INT), INTENT(OUT)               :: Int_Regions
     END SUBROUTINE TweedieIntegration
 
   END INTERFACE
@@ -37,6 +38,21 @@ SUBROUTINE twcomputation_main(N, p, phi, y, mu, verbose, pdf, funvalue, exitstat
 
   ! Initialization
   Cp = p
+  IF (.NOT. ALLOCATED(Cy)) THEN
+      ALLOCATE(Cy(N), Cmu(N), Cphi(N), STAT=istat)
+      IF (istat /= 0) THEN
+        CALL INTPR("Allocation failed!", 0)
+        RETURN
+      END IF
+  ELSE IF (SIZE(Cy) .NE. N) THEN
+      DEALLOCATE(Cy, Cmu, Cphi)
+      ALLOCATE(Cy(N), Cmu(N), Cphi(N), STAT=istat)
+      IF (istat /= 0) THEN
+        CALL INTPR("Allocation failed!", 0)
+        RETURN
+      END IF
+  END IF
+  
   Cy = y
   Cmu = mu
   Cphi = phi
@@ -56,11 +72,12 @@ SUBROUTINE twcomputation_main(N, p, phi, y, mu, verbose, pdf, funvalue, exitstat
 
   exitstatus = 1
   relerr = 0.0_C_DOUBLE
+  funvalueTMP = 0.0_C_DOUBLE
 
 
   ! Determine case: pSmall = TRUE means 1 < p < 2
   CpSmall = .FALSE.
-  IF ( (p > 1.0_C_DOUBLE) .AND. (p < 2.0_C_DOUBLE) ) CpSmall = .TRUE.
+  IF ( (p .GT. 1.0_C_DOUBLE) .AND. (p .LT. 2.0_C_DOUBLE) ) CpSmall = .TRUE.
 
 
   ! Loop over N values

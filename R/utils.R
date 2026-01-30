@@ -1,3 +1,5 @@
+
+#' @noRd
 sort_notation <- function(xi = NULL, power = NULL){
   # Sorts out whether the  xi  or the  p/power  notation is being used,
   # so output presented appropriately
@@ -45,6 +47,7 @@ sort_notation <- function(xi = NULL, power = NULL){
 
 ################################################################################
 
+#' @noRd
 check_inputs <- function(y, mu, phi, power, type = "standard"){
   # Checks that the inputs satisfy the necessary criteria (e.g., mu > 0).
   # Ensures that y, mu and phi are all vectors of the same length.
@@ -142,7 +145,8 @@ check_inputs <- function(y, mu, phi, power, type = "standard"){
 
 ################################################################################
 
-special_cases <- function(y, mu, phi, power, type = "PDF", verbose = FALSE){
+#' @noRd
+special_cases <- function(y, mu, phi, power, type = "PDF", verbose = FALSE, IGexact = TRUE){
   # Special cases may be one of two types:
   # - based on the value of p:
   #   - p = 0: use Normal distribution
@@ -155,6 +159,7 @@ special_cases <- function(y, mu, phi, power, type = "PDF", verbose = FALSE){
   #   - y == 0
   #   In this case, special_y_cases is a vector, and is TRUE when appropriate
   
+
   f <- array( 0, 
               dim = length(y) )
   special_p_cases <- FALSE        # TRUE if special cases are defined by special values of p: SCALAR
@@ -162,9 +167,10 @@ special_cases <- function(y, mu, phi, power, type = "PDF", verbose = FALSE){
                          length(y) )
   
   # Special cases BASED ON VALUE OF p
-  if ( (power == 0 ) | (power == 1) | (power == 2) | (power == 3) ){
+  if ( (power == 0 ) | (power == 1) | (power == 2) | (power == 3)){
     if (verbose) cat("Special cases in p found ")
     # Special cases based on the value of p  
+    
     special_p_cases = TRUE
     
     # CASE: Normal (p=0)
@@ -208,16 +214,20 @@ special_cases <- function(y, mu, phi, power, type = "PDF", verbose = FALSE){
     }
     
     # CASE: inverse Gaussian (p=3)
-    if ( power == 3) {
-      if (verbose) cat("power = 3 (inverse Gaussian case)\n")
-      if (type == "PDF") {
-        f <- statmod::dinvgauss(x = y, 
-                                mean = mu, 
-                                dispersion = phi)
+    if (power == 3) {
+      if (IGexact) {
+        if (verbose) cat("power = 3 (inverse Gaussian case)\n")
+        if (type == "PDF") {
+          f <- statmod::dinvgauss(x = y, 
+                                  mean = mu, 
+                                  dispersion = phi)
+        } else {
+          f <- statmod::pinvgauss(q = y, 
+                                  mean = mu, 
+                                  dispersion = phi)
+        }
       } else {
-        f <- statmod::pinvgauss(q = y, 
-                                mean = mu, 
-                                dispersion = phi)
+        special_p_cases = FALSE
       }
     }
 
@@ -234,7 +244,7 @@ special_cases <- function(y, mu, phi, power, type = "PDF", verbose = FALSE){
       if (any(y_Zero)) {
 
         if ( (power > 0) & (power < 2) ) {
-          f[y_Zero] <- exp( -find_lambda(mu[y_Zero], phi[y_Zero], power) )
+          f[y_Zero] <- exp( -tweedie_lambda(mu[y_Zero], phi[y_Zero], power) )
         } else {
           f[y_Zero] <- 0  
         }

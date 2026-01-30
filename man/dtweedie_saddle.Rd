@@ -6,6 +6,8 @@
 \title{Tweedie densities evaluation using the saddlepoint approximation}
 \usage{
 dtweedie_saddle(y, xi = NULL, mu, phi, eps = 1/6, power = NULL)
+
+dtweedie.saddle(y, xi = NULL, mu, phi, eps = 1/6, power = NULL)
 }
 \arguments{
 \item{y}{vector of quantiles.}
