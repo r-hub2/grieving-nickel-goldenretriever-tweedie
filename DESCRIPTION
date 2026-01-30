@@ -13,6 +13,6 @@ License: GPL (>=2)
 NeedsCompilation: yes
 RoxygenNote: 7.3.3
 Config/testthat/edition: 3
-Packaged: 2026-01-30 06:26:34 UTC; pdunn2
+Packaged: 2026-01-30 07:13:21 UTC; pdunn2
 Author: Peter K. Dunn [cre, aut]
 Maintainer: Peter K. Dunn <pdunn2@usc.edu.au>
