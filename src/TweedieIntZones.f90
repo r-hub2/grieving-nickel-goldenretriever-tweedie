@@ -6,6 +6,7 @@ MODULE TweedieIntZones
   USE Calcs_Imag
   USE Calcs_Real
   USE ISO_C_BINDING, ONLY: C_INT, C_DOUBLE, C_BOOL
+  USE R_interfaces
 
   IMPLICIT NONE
 
@@ -13,7 +14,7 @@ CONTAINS
     
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  SUBROUTINE checkStopPreAcc(i, tmax, zeroL, &
+  SUBROUTINE checkStopPreAcc(tmax, zeroL, &
                              stop_PreAccelerate, converged_Pre)
     ! Determine if it is OK to stop pre-accelerating, and start using acceleration
     
@@ -21,13 +22,11 @@ CONTAINS
   
     REAL(KIND=C_DOUBLE), INTENT(IN) :: tmax
     REAL(KIND=C_DOUBLE), INTENT(IN) :: zeroL
-    INTEGER(C_INT), INTENT(IN)      :: i
-    LOGICAL(C_BOOL), INTENT(OUT)    :: stop_PreAccelerate, converged_Pre
+     LOGICAL(C_BOOL), INTENT(OUT)    :: stop_PreAccelerate, converged_Pre
     
     ! Local vars
     INTEGER(C_INT)        :: nmax
     REAL(KIND=C_DOUBLE)   :: MM, Rek, Rekd, tstop, pi
-    REAL(KIND=C_DOUBLE)   :: current_y, current_mu, current_phi
     
     ! NOTE: 
     ! If  stop_PreAccelerate  is  .TRUE.  it means to stop pre-accelerating
@@ -46,10 +45,6 @@ CONTAINS
     
     pi = 4.0_C_DOUBLE * DATAN(1.0_C_DOUBLE)
     
-    ! Grab the relevant scalar values for this iteration:
-    current_y    = Cy(i)
-    current_mu   = Cmu(i)
-    current_phi  = Cphi(i)
 
     ! Initialise
     stop_PreAccelerate = .FALSE.
@@ -95,8 +90,8 @@ CONTAINS
     
     ! Sometimes this takes forever to flag  stop_PreAccelerate  as .TRUE.
     ! so also check if exp{Re k(t)/t} is very small
-    CALL evaluateRek( i, zeroL, Rek)
-    CALL evaluateRekd(i, zeroL, Rekd)
+    CALL evaluateRek( zeroL, Rek)
+    CALL evaluateRekd(zeroL, Rekd)
     
     IF (zeroL .GT. 0.0_C_DOUBLE) THEN
       IF ( ( (DEXP(Rek)/zeroL) .LT. 1.0E-07_C_DOUBLE) .AND.          & 
@@ -105,7 +100,7 @@ CONTAINS
         converged_Pre = .TRUE.
         
         IF (Cverbose) THEN 
-          CALL DBLEPR("checkStopPreAcc: Pre-accelerating stopping (a). Rek(t) small:", -1, (DEXP(Rek)/zeroL), 1)
+          ! CALL DBLEPR("checkStopPreAcc: Pre-accelerating stopping (a). Rek(t) small:", -1, (DEXP(Rek)/zeroL), 1)
         END IF
       END IF
     END IF
@@ -116,7 +111,7 @@ CONTAINS
         converged_Pre = .TRUE.
 
         IF (Cverbose) THEN 
-          CALL DBLEPR("checkStopPreAcc: Pre-accelerating stopping (b). Rek(t) small:", -1, (DEXP(Rek)/zeroL), 1)
+          ! CALL DBLEPR("checkStopPreAcc: Pre-accelerating stopping (b). Rek(t) small:", -1, (DEXP(Rek)/zeroL), 1)
         END IF
       END IF
     END IF
@@ -170,7 +165,7 @@ CONTAINS
     ! Now work out the value of the next right zero
     
     ! - First: update to the next value of m
-    CALL advanceM(i, m, mmax, mOld, left_Of_Max)
+    CALL advanceM(m, mmax, mOld, left_Of_Max)
 
     ! - Secondly, find the next zero, corresponding to this value of m,
     !   which becomes  zeroR.
@@ -194,12 +189,12 @@ CONTAINS
     zeroStartPoint = (zeroBoundL + zeroBoundR)/2.0_C_DOUBLE
 
     ! Improve the starting point (sometimes very useful):
-    CALL improveKZeroBounds(i, m, left_Of_Max, zeroStartPoint, &
+    CALL improveKZeroBounds(m, left_Of_Max, zeroStartPoint, &
                             zeroBoundL, zeroBoundR)
     zeroStartPoint = (zeroBoundL + zeroBoundR)/2.0_C_DOUBLE
 
     ! Now find the zero, within the bounds, with this starting point
-    CALL findExactZeros(i, m, zeroBoundL, zeroBoundR, &
+    CALL findExactZeros(m, zeroBoundL, zeroBoundR, &
                         zeroStartPoint, zeroR, left_Of_Max)
     ! The zero just found  (zeroR)  is the right-side zero
 
@@ -212,26 +207,26 @@ CONTAINS
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   
   
-  SUBROUTINE findInitialZeroR(i, mfirst, left_Of_Max, tmax, &
+  SUBROUTINE findInitialZeroR(mfirst, left_Of_Max, tmax, &
                               zeroR)
   
+    USE tweedie_params_mod
+    
     IMPLICIT NONE
     
     REAL(KIND=C_DOUBLE), INTENT(OUT)    :: zeroR
-    INTEGER(C_INT), INTENT(IN)          :: mfirst, i
+    INTEGER(C_INT), INTENT(IN)          :: mfirst
     LOGICAL(C_BOOL), INTENT(INOUT)      :: left_Of_Max
     REAL(KIND=C_DOUBLE), INTENT(IN)     :: tmax
 
     ! Local vars
     REAL(KIND=C_DOUBLE)                 :: t_Start_Point, zeroBoundL, zeroBoundR
-    REAL(KIND=C_DOUBLE)                 :: pi, TMP, current_y
+    REAL(KIND=C_DOUBLE)                 :: pi, TMP
     LOGICAL(C_BOOL)                     :: error
 
 
     pi = 4.0_C_DOUBLE * DATAN(1.0_C_DOUBLE)
 
-    ! Grab the relevant scalar values for this iteration:
-    current_y    = Cy(i)
 
     ! Initialisation
     t_Start_Point = 0.0_C_DOUBLE
@@ -255,10 +250,10 @@ CONTAINS
     END IF
   
     ! Find the zero
-    CALL findExactZeros(i, mfirst, zeroBoundL, zeroBoundR, t_Start_Point, zeroR, left_Of_Max)
+    CALL findExactZeros(mfirst, zeroBoundL, zeroBoundR, t_Start_Point, zeroR, left_Of_Max)
     ! findExactZeros may change the value of  left_Of_Max
 
-    CALL evaluateImk(i, zeroR, TMP, error)
+    CALL evaluateImk(zeroR, TMP, error)
     IF (error) CALL DBLEPR("ERROR: integrand zero =", -1, zeroR, 1)
 
   END SUBROUTINE findInitialZeroR

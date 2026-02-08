@@ -14,7 +14,7 @@
 #' 
 #' @examples
 #' # Plot a Tweedie density
-#' y <- seq(0, 5, length = 100)
+#' y <- seq(0.01, 4, length = 50)
 #' fy <- dtweedie_saddle(y, power = 1.1, mu = 1, phi = 1)
 #' plot(y, fy, type = "l", lwd = 2, ylab = "Density")
 #'

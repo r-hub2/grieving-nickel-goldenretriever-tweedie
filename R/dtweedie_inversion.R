@@ -38,7 +38,7 @@
 
 #' @examples
 #' # Plot a Tweedie density
-#' y <- seq(0, 5, length = 100)
+#' y <- seq(0.02, 4, length = 50)
 #' fy <- dtweedie_inversion(y, mu = 1, phi = 1, power = 1.1)
 #' plot(y, fy, type = "l", lwd = 2, ylab = "Density")
 #' 
@@ -67,7 +67,7 @@ dtweedie_inversion <- function(y, mu, phi, power, method = 3, verbose = FALSE,
   density <- numeric(length = length(y) )
   
   # IDENTIFY SPECIAL CASES
-  special_y_cases <- rep(FALSE, length(y), IGexact = IGexact)
+  special_y_cases <- rep(FALSE, length(y))
   if (verbose) cat("- Checking for special cases\n")
   out <- special_cases(y, mu, phi, power,
                        IGexact = IGexact,
@@ -191,10 +191,10 @@ dtweedie_inversion <- function(y, mu, phi, power, method = 3, verbose = FALSE,
 							verbose    = as.integer( verbose ),
 							pdf        = as.integer(1),          # 1: TRUE, as this is the PDF
 							# THE OUTPUTS:
-							funvalue   = as.double(rep(0, N_nonSpecial)),   # funvalue
-							exitstatus = as.integer(0),          # exitstatus
-							relerr     = as.double(0),           # relerr
-							its        = as.integer(rep(0, N_nonSpecial)),  # its
+							funvalue   = numeric(N_nonSpecial),  # funvalue
+							exitstatus = integer(N_nonSpecial),  # exitstatus
+							relerr     = numeric(N_nonSpecial),  # relerr
+							its        = integer(N_nonSpecial),  # its
 							PACKAGE    = "tweedie")
 		
 		density[!special_y_cases] <- tmp$funvalue

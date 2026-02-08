@@ -75,22 +75,18 @@ Consequently, all checks on the function inputs are performed in these functions
 }
 
 \examples{
-# Plot a Tweedie density
+# Compute a Tweedie density
 power <- 1.1
 mu <- 1
 phi <- 1
-y <- seq(0, 5, length = 100)
-fy <- dtweedie(y, power = power, mu = mu, phi = phi)
-plot(y, fy, type = "l", lwd = 2, ylab = "Density")
+y <- seq(0, 5, by = 0.5)
+dtweedie(y, power = power, mu = mu, phi = phi)
 
 # Compare to the saddlepoint density
-f.saddle <- dtweedie_saddle( y = y, power = power, mu = mu, phi = phi)
-lines( y, f.saddle, col = 2)
-legend("topright", col = c(1, 2), lwd = c(2, 1), legend = c("Actual", "Saddlepoint"))
+dtweedie_saddle(y = y, power = power, mu = mu, phi = phi)
 
-# Plot the DF:
-Fy <- ptweedie(y, power = power, mu = mu, phi = phi)
-plot(y, Fy, type = "l", lwd = 2, ylab = "Density")
+# The DF:
+ptweedie(y, power = power, mu = mu, phi = phi)
 
 }
 \references{

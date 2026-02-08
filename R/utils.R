@@ -113,7 +113,7 @@ check_inputs <- function(y, mu, phi, power, type = "standard"){
       }
     } else {
       # If  mu  is a scalar, force it to be the same same length as  y
-      mu <- array( dim = length(y), mu )
+      mu <- rep_len(mu, length(y) )
       # A vector of all mu's
     }
     
@@ -127,7 +127,7 @@ check_inputs <- function(y, mu, phi, power, type = "standard"){
       }
     } else {
       # If  phi  is a scalar, force it to be the same same length as  y
-      phi <- array( dim = length(y), phi )
+      phi <- rep_len(phi, length(y) )
       # A vector of all phi's
     }
   }
@@ -160,8 +160,7 @@ special_cases <- function(y, mu, phi, power, type = "PDF", verbose = FALSE, IGex
   #   In this case, special_y_cases is a vector, and is TRUE when appropriate
   
 
-  f <- array( 0, 
-              dim = length(y) )
+  f <- numeric( length(y) )
   special_p_cases <- FALSE        # TRUE if special cases are defined by special values of p: SCALAR
   special_y_cases <- rep(FALSE,   # TRUE where special cases are defined by special values of y: VECTOR
                          length(y) )
@@ -177,13 +176,13 @@ special_cases <- function(y, mu, phi, power, type = "PDF", verbose = FALSE, IGex
     if ( power == 0) {
       if (verbose) cat("power = 0 (normal case)\n")
       if (type == "PDF") {
-        f <- stats::pnorm( mean = mu, 
-                           sd = sqrt(phi),
-                           q = y )
+        f <- stats::dnorm( y, 
+                           mean = mu, 
+                           sd = sqrt(phi))
       } else {
-        f <- stats::pnorm( mean = mu, 
-                           sd = sqrt(phi),
-                           q = y )
+        f <- stats::pnorm( y, 
+                           mean = mu, 
+                           sd = sqrt(phi))
       }
     }
     

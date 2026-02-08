@@ -46,5 +46,8 @@ test_that("No common errors", {
   expect_no_error(
     ptweedie_inversion(0.3, mu = 2, phi = 1, power = 3.5)
   )
+  expect_no_error(
+    ptweedie(q = 7.709933e-308, mu = 10.17691, phi = 4.55, power = 1.98)
+  )
 })
 

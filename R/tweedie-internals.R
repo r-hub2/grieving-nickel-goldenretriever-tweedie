@@ -36,25 +36,6 @@ dtweedie_logl <- function(phi, y, mu, power) {
 }
 
 
-#############################################################################
-
-#' @noRd
-logLiktweedie <- function(glm.obj, dispersion = NULL) {
-  # Computes the log-likelihood for
-  # a Tweedie glm.  
-  
-  # Peter Dunn
-  # 19 October 2017
-  
-  p <- get("p", envir = environment(glm.obj$family$variance))
-  if (p == 1) message("*** Tweedie index power = 1: Consider using  dispersion = 1  in call to  logLiktweedie().\n")
-  
-  AICtweedie(glm.obj, 
-             dispersion = dispersion, 
-             k = 0, 
-             verbose = FALSE) / (-2)
-}
-
 
 #############################################################################
 

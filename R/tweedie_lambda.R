@@ -27,7 +27,7 @@
 tweedie_lambda <- function(mu, phi, power){
   # Computes the value of lambda, such that P(Y = 0 ) = exp( -lambda) when 1 < p < 2
   if (power >= 2) {
-    rep(0, length = length(mu) )
+    rep(NA, length = length(mu) )
   } else {
     mu ^ (2 - power) / (phi * (2 - power) )
   }

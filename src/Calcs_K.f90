@@ -3,15 +3,18 @@ MODULE Calcs_K
 
   USE tweedie_params_mod
   USE ISO_C_BINDING, ONLY: C_INT, C_DOUBLE, C_BOOL
+  USE R_interfaces
 
   IMPLICIT NONE
   
+  ! --- Shared Module Variables ---
+  ! These are "private" to the module so they don't leak elsewhere, 
+  ! but "global" to every subroutine inside.
+
   PUBLIC :: findKmax, findKmaxSP, improveKZeroBounds, findExactZeros, advanceM
   
 CONTAINS
 
-  
-  
   
   SUBROUTINE findKmax(i, kmax, tmax, mmax, mfirst, left_Of_Max)
     ! Finds the value of Kmax, Tmax, and Mmax.
@@ -30,9 +33,14 @@ CONTAINS
   
     REAL(KIND=C_DOUBLE)     :: pi, t_Start_Point, slope_At_Zero, Imk_value
     REAL(KIND=C_DOUBLE)     :: aimrerr, tmaxL, tmaxR, ratio, threshold, t_small
-    REAL(KIND=C_DOUBLE)     :: current_y, current_mu, current_phi
     LOGICAL(C_BOOL)         :: error
     
+    
+    ! Grab the relevant scalar values for this iteration:
+    current_y    = Cy(i)    ! Access y value for index i
+    current_mu   = Cmu(i)   ! Access mu value for index i
+    current_phi  = Cphi(i)  ! Access phi value for index i
+
   
     ! A. If Im k(t) heads down initially: easy: kmax = tmax = mmax = 0
     ! B. Otherwise, we need to find kmax etc by solving Im k'(t) = 0
@@ -56,7 +64,7 @@ CONTAINS
   
   
     ! Find starting points
-    CALL evaluateImkd(i, 0.0_C_DOUBLE, slope_At_Zero)
+    CALL evaluateImkd(0.0_C_DOUBLE, slope_At_Zero)
 
     IF (slope_At_Zero .LE. 0.0_C_DOUBLE) THEN
       ! A. Im k(t) initially heads DOWNWARDS
@@ -94,7 +102,7 @@ CONTAINS
   
         tmax = threshold
         t_Start_Point = tInitialGuess()   ! This computes large-t approx
-        CALL evaluateImk(i, tmax, kmax, error)    ! Now find the corresponding value of kmax
+        CALL evaluateImk(tmax, kmax, error)    ! Now find the corresponding value of kmax
         IF (error) CALL DBLEPR("ERROR: integrand zero =", -1, t_Start_Point, 1)
   
       ELSE
@@ -124,11 +132,10 @@ CONTAINS
           tmaxL = 0.0_C_DOUBLE       ! Since Left bound can be zero
           tmaxR = t_Start_Point * 2.0_C_DOUBLE
 !  WRITE(*,*) "  BOUNDS 1: RTSAFE", tmaxL, tmaxR
-          CALL improveKmaxSPBounds(i, t_Start_Point, tmaxL, tmaxR)
+          CALL improveKmaxSPBounds(t_Start_Point, tmaxL, tmaxR)
 !  WRITE(*,*) "  BOUNDS 1 revises: RTSAFE", tmaxL, tmaxR
           ! Crudely improve the bounds that bracket the starting point for finding Kmax.
-          CALL rtsafe(i,                  &
-                        evaluateImkdZero,   &
+          CALL rtsafe(  evaluateImkdZero,   &
                         tmaxL,              &
                         tmaxR,              &
                         aimrerr,            &
@@ -143,7 +150,7 @@ CONTAINS
       !       the CDF has integrand zeros at Im k(t) =        m pi/y.
   
       ! Find kmax from tmax
-      CALL evaluateImk(i, tmax, kmax, error)
+      CALL evaluateImk(tmax, kmax, error)
       IF (error) CALL DBLEPR("ERROR: integrand zero =", -1, tmax, 1)
       ! Find mmax from kmax
       IF (Cpdf) THEN
@@ -212,28 +219,22 @@ CONTAINS
       END FUNCTION tInitialGuess
   
       
-      SUBROUTINE improveKmaxSPBounds(i, startTKmax, tmaxL, tmaxR)
+      SUBROUTINE improveKmaxSPBounds(startTKmax, tmaxL, tmaxR)
         ! Crudely improve the bounds that bracket the starting point for finding Kmax.
         ! Sometime a decent starting point is crucial for timely convergence.
         USE ISO_C_BINDING, ONLY: C_INT, C_DOUBLE
       
         IMPLICIT NONE
         REAL(KIND=C_DOUBLE), INTENT(IN)     :: startTKmax
-        INTEGER(C_INT), INTENT(IN)          :: i
         REAL(KIND=C_DOUBLE), INTENT(INOUT)  :: tmaxL, tmaxR
       
         ! --- Local Variables ---
-        REAL(KIND=C_DOUBLE)     :: current_y, current_mu, current_phi
         REAL(KIND=C_DOUBLE)     :: boundL, boundR, slopeL, slopeR
         REAL(KIND=C_DOUBLE)     :: oldBoundL, oldBoundR
         INTEGER(C_INT)          :: max_Search, search_Its
         LOGICAL(C_BOOL)         :: keep_Searching, error
         
-        ! Grab the relevant scalar values for this iteration:
-        current_y    = Cy(i)    ! Access y value for index i
-        current_mu   = Cmu(i)   ! Access mu value for index i
-        current_phi  = Cphi(i)  ! Access phi value for index i
-      
+
         max_Search = 10
         
         !!!!! LOWER BOUND
@@ -241,8 +242,8 @@ CONTAINS
         boundL = tmaxL
         boundR = tmaxR
   
-        CALL evaluateImkd(i, boundL, slopeL)
-        CALL evaluateImk(i, boundL, Imk_value, error)
+        CALL evaluateImkd(boundL, slopeL)
+        CALL evaluateImk(boundL, Imk_value, error)
         IF (error) CALL DBLEPR("ERROR: integrand zero =", -1, boundL, 1)
         
         ! Slope at starting point should always be positive if we are here:
@@ -253,8 +254,8 @@ CONTAINS
         DO WHILE (keep_Searching)
           oldBoundL = boundL
           boundL = (boundL + 1.0E-2_C_DOUBLE) * 1.250E0_C_DOUBLE
-          CALL evaluateImkd(i, boundL, slopeL)
-          CALL evaluateImk(i, boundL, Imk_value, error)
+          CALL evaluateImkd(boundL, slopeL)
+          CALL evaluateImk(boundL, Imk_value, error)
           IF (error) CALL DBLEPR("ERROR: integrand zero =", -1, boundL, 1)
   
           IF ( (slopeL .LT. 0.0E0_C_DOUBLE ) .OR.   &
@@ -273,10 +274,10 @@ CONTAINS
         IF (tmaxL .GT. boundR) boundR = tmaxL * 2.0_C_DOUBLE 
         
         ! Find the slope at boundR the starting point (SP)
-        CALL evaluateImkd(i, boundR, slopeR)
+        CALL evaluateImkd(boundR, slopeR)
         
         ! Find the value if kmax at the starting point (SP)
-        CALL evaluateImk(i, boundR, Imk_value, error)
+        CALL evaluateImk(boundR, Imk_value, error)
         IF (error) CALL DBLEPR("ERROR: integrand zero =", -1, boundR, 1)
   
         ! A valid upper bound:
@@ -295,8 +296,8 @@ CONTAINS
             search_Its = search_Its + 1
             boundR = (boundR + 0.1_C_DOUBLE) * 2.0E0_C_DOUBLE
       
-            CALL evaluateImkd(i, boundR, slopeR)
-            CALL evaluateImk(i, boundR, Imk_value, error)
+            CALL evaluateImkd(boundR, slopeR)
+            CALL evaluateImk(boundR, Imk_value, error)
             IF (error) CALL DBLEPR("ERROR: integrand zero =", -1, boundR, 1)
   
             IF ( (slopeR .LT. 0.0E0_C_DOUBLE ) .AND.  &
@@ -313,8 +314,8 @@ CONTAINS
         DO WHILE (keep_Searching)
           oldBoundR = boundR
           boundR = boundR * 0.90E0_C_DOUBLE
-          CALL evaluateImkd(i, boundR, slopeR)
-          CALL evaluateImk(i, boundR, Imk_value, error)
+          CALL evaluateImkd(boundR, slopeR)
+          CALL evaluateImk(boundR, Imk_value, error)
           IF (error) CALL DBLEPR("ERROR: integrand zero =", -1, boundR, 1)
   
           IF ( (slopeR .GT. 0.0E0_C_DOUBLE) .AND.   &
@@ -335,7 +336,7 @@ CONTAINS
   
   
     
-  REAL(KIND=C_DOUBLE) FUNCTION findKmaxSP(i) 
+  REAL(KIND=C_DOUBLE) FUNCTION findKmaxSP() 
     ! Find the starting point for finding Kmax
     
     USE tweedie_params_mod
@@ -344,19 +345,10 @@ CONTAINS
   
     IMPLICIT NONE
     
-    INTEGER(C_INT), INTENT(IN)    :: i
     REAL(KIND=C_DOUBLE)           :: tsmall, tlarge, abs1mp
     REAL(KIND=C_DOUBLE)           :: omegaInf, slope, pi
   
-    REAL(KIND=C_DOUBLE)           :: current_y, current_mu, current_phi
-  
-  
-    ! Grab the relevant scalar values for this iteration:
-    current_y    = Cy(i)    ! Access y value for index i
-    current_mu   = Cmu(i)   ! Access mu value for index i
-    current_phi  = Cphi(i)  ! Access phi value for index i
-  
-  
+
     ! Initialize
     abs1mp = ABS(1.0_C_DOUBLE - Cp)
     pi = 4.0_C_DOUBLE * DATAN(1.0_C_DOUBLE)
@@ -378,7 +370,7 @@ CONTAINS
       tsmall = current_mu**(1.0_C_DOUBLE - Cp) / ( (1.0_C_DOUBLE - Cp)) * &
                DTAN(omegaInf)
       
-      CALL evaluateImkd(i, tsmall, slope)
+      CALL evaluateImkd(tsmall, slope)
       
       IF (slope .LE. 0.0_C_DOUBLE) THEN
         findKmaxSP = tsmall
@@ -390,7 +382,7 @@ CONTAINS
     tlarge = (current_mu / current_y)**(Cp - 1.0_C_DOUBLE) * &
               current_mu**(1.0_C_DOUBLE - Cp) / (current_phi * abs1mp)
   
-    CALL evaluateImkd(i, tlarge, slope)
+    CALL evaluateImkd(tlarge, slope)
   
     IF (slope .LE. 0.0_C_DOUBLE) THEN
       findKmaxSP = tlarge
@@ -404,42 +396,29 @@ CONTAINS
   
   
   
-
-
-
-
-
-
   
-  
-  SUBROUTINE improveKZeroBounds(i, m, left_Of_Max, zeroMid, zeroL, zeroR)
+  SUBROUTINE improveKZeroBounds(m, left_Of_Max, zeroMid, zeroL, zeroR)
     ! Improve the bounds that bracket the zero of Im k(t).
     ! A decent starting point is sometimes crucial to timely convergence.
     
-    USE tweedie_params_mod, ONLY: Cphi, Cmu, Cy
+    USE tweedie_params_mod
     USE ISO_C_BINDING, ONLY: C_INT, C_DOUBLE, C_BOOL
     USE Calcs_Imag, ONLY: evaluateImkM
     
     IMPLICIT NONE
     
     REAL(KIND=C_DOUBLE), INTENT(INOUT)  :: zeroMid
-    INTEGER(C_INT), INTENT(IN)          :: i, m
+    INTEGER(C_INT), INTENT(IN)          :: m
     REAL(KIND=C_DOUBLE), INTENT(INOUT)  :: zeroL, zeroR
     LOGICAL(C_BOOL), INTENT(IN)         :: left_Of_Max
   
-    REAL(KIND=C_DOUBLE)     :: current_y, current_mu, current_phi
     REAL(KIND=C_DOUBLE)     :: valueL, valueR, multiplier
     REAL(KIND=C_DOUBLE)     :: df, valueMid
-    INTEGER(C_INT)          :: maxSearch
+    INTEGER(C_INT)          :: maxSearch,its
+    LOGICAL(C_BOOL)         :: stopIterating
   
   
-    ! Grab the relevant scalar values for this iteration:
-    current_y    = Cy(i)    ! Access y value for index i
-    current_mu   = Cmu(i)   ! Access mu value for index i
-    current_phi  = Cphi(i)  ! Access phi value for index i
-  
-  
-  
+
     ! Initialisation
     maxSearch = 10  ! Don't spend too long, so set limit
   
@@ -460,9 +439,9 @@ CONTAINS
   
     ! FIND the function value of the starting point (SP)
     zeroMid = (zeroL + zeroR) / 2.0_C_DOUBLE
-    CALL evaluateImkM(i, zeroMid, valueMid, df, m)
-    CALL evaluateImkM(i, zeroL, valueL, df, m)
-    CALL evaluateImkM(i, zeroR, valueR, df, m)
+    CALL evaluateImkM(zeroMid, valueMid, df, m)
+    CALL evaluateImkM(zeroL, valueL, df, m)
+    CALL evaluateImkM(zeroR, valueR, df, m)
   
   
     ! CHECK IF BOUNDS REALLY DO BOUND THE ZERO:
@@ -472,23 +451,35 @@ CONTAINS
       ! The solution depends on what side of the max we are.
       ! If to the LEFT of the max of Im k(t), zeroL should give a -ive value; zeroR a +ive value.
       IF ( left_Of_Max) THEN
-        DO WHILE ( valueL .GT. 0.0_C_DOUBLE) 
+        its = 0_C_INT
+        stopIterating = .FALSE.
+        DO WHILE ( .NOT.(stopIterating) )  
+          its = its + 1_C_INT
           ! We are on the LEFT of the maximum of Im k(t), but the L bound gives a +ive value.
           ! So we need to go LEFT a little.
           zeroL = (zeroL - 0.1_C_DOUBLE) * 0.95_C_DOUBLE
-          CALL evaluateImkM(i, zeroL, valueL, df, m)
+          CALL evaluateImkM(zeroL, valueL, df, m)
+          
+          IF (its .GE. 100_C_INT) stopIterating = .TRUE.
+          IF( valueL .LE. 0.0_C_DOUBLE) stopIterating = .TRUE.
         END DO
   
   
   
         ! The solution depends on what side of the max we are.
         ! If to the LEFT of the max of Im k(t), zeroL should give a -ive value; zeroR a +ive value.
+        its = 0_C_INT
+        stopIterating = .FALSE.
         DO WHILE ( valueR .LT. 0.0_C_DOUBLE) 
           ! We are on the LEFT of the maximum of Im k(t), but the R bound gives a -ive value.
           ! So we need to go RIGHT a little.
           zeroR = (zeroR + 0.1_C_DOUBLE) * 1.05_C_DOUBLE
-          CALL evaluateImkM(i, zeroR, valueR, df, m)
+          CALL evaluateImkM(zeroR, valueR, df, m)
+
+          IF (its .GE. 100_C_INT) stopIterating = .TRUE.
+          IF( valueR .GE. 0.0_C_DOUBLE) stopIterating = .TRUE.
         END DO
+        
       END IF
   
   
@@ -502,7 +493,7 @@ CONTAINS
           ! We are on the RIGHT of the maximum of Im k(t), but the L bound gives a -ive value.
           ! So we need to go LEFT a little.
           zeroL = (zeroL - 0.1_C_DOUBLE) * 0.95_C_DOUBLE
-          CALL evaluateImkM(i, zeroL, valueL, df, m)
+          CALL evaluateImkM(zeroL, valueL, df, m)
         END DO
   
   
@@ -513,7 +504,7 @@ CONTAINS
           ! We are on the RIGHT of the maximum of Im k(t), but the R bound gives a +ive value.
           ! So we need to go RIGHT a little.
           zeroR = (zeroR + 0.1_C_DOUBLE) * 1.05_C_DOUBLE
-          CALL evaluateImkM(i, zeroR, valueR, df, m)
+          CALL evaluateImkM(zeroR, valueR, df, m)
         END DO
       END IF
   
@@ -533,9 +524,9 @@ CONTAINS
         
       ! And once more ONLY
       zeroMid = (zeroL + zeroR) / 2.0_C_DOUBLE
-      CALL evaluateImkM(i, zeroMid, valueMid, df, m)
-      CALL evaluateImkM(i, zeroL, valueL, df, m)
-      CALL evaluateImkM(i, zeroR, valueR, df, m)
+      CALL evaluateImkM(zeroMid, valueMid, df, m)
+      CALL evaluateImkM(zeroL, valueL, df, m)
+      CALL evaluateImkM(zeroR, valueR, df, m)
   
       ! Find a point halfway between bounds.
       ! If the new point has same sign as L/R bound, make that the new L/R bounds.
@@ -557,30 +548,24 @@ CONTAINS
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   
   
-  SUBROUTINE advanceM(i, m, mmax, mOld, left_Of_Max)
+  SUBROUTINE advanceM(m, mmax, mOld, left_Of_Max)
       ! Determine the next value of m, for solving the zeros of the integrand
       
       USE ISO_C_BINDING, ONLY: C_INT, C_DOUBLE, C_BOOL
     
       IMPLICIT NONE
       
-      INTEGER(C_INT), INTENT(IN)        :: mmax, i    ! Maximum value m can take, and current index
+      INTEGER(C_INT), INTENT(IN)        :: mmax       ! Maximum value m can take, and current index
       INTEGER(C_INT), INTENT(INOUT)     :: m          ! M index (used for calculation and C-binding)
       INTEGER(C_INT), INTENT(OUT)       :: mOld       ! Previous index value
       LOGICAL(C_BOOL), INTENT(INOUT)    :: left_Of_Max  ! True if on the left side of kmax
 
-      ! Local vars      
-      REAL(KIND=C_DOUBLE)               :: current_y, current_mu, current_phi
+      ! Local vars
       LOGICAL(C_BOOL)                   :: flip_To_Other_Side
         ! flip_To_Other_Side. is  .TRUE.  if the value of  m  crosses from the 
         ! left of  mmax   to the right of  mmax
     
-    
-      ! Grab the relevant scalar values for this iteration:
-      current_y    = Cy(i)    ! Access y value for index i
-      current_mu   = Cmu(i)   ! Access mu value for index i
-      current_phi  = Cphi(i)  ! Access phi value for index i
-    
+
       mOld = m
       flip_To_Other_Side = .FALSE.
         ! flip_To_Other_Side signals that m has just crossed mmax;
@@ -617,7 +602,7 @@ CONTAINS
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     
     
-    SUBROUTINE findExactZeros(i, m, tL, tR, tStart, tZero, left_Of_Max) 
+    SUBROUTINE findExactZeros(m, tL, tR, tStart, tZero, left_Of_Max) 
   ! Find the exact zeros of the integrand
   
   USE tweedie_params_mod
@@ -627,21 +612,16 @@ CONTAINS
   
   IMPLICIT NONE
 
-  INTEGER(C_INT), INTENT(IN)          :: i, m
+  INTEGER(C_INT), INTENT(IN)          :: m
   REAL(KIND=C_DOUBLE), INTENT(INOUT)  :: tL, tR, tStart
   REAL(KIND=C_DOUBLE), INTENT(OUT)    :: tZero
   LOGICAL(C_BOOL), INTENT(IN)         :: left_Of_Max
 
   REAL(KIND=C_DOUBLE)   :: xacc, fL, fR, dfL, dfR, tstart_update, tMid
-  REAL(KIND=C_DOUBLE)   :: current_y, current_mu, current_phi
   LOGICAL(C_BOOL)       :: error
 
-
-  ! Grab the relevant scalar values for this iteration:
-  current_y    = Cy(i)    ! Access y value for index i
-  current_mu   = Cmu(i)   ! Access mu value for index i
-  current_phi  = Cphi(i)  ! Access phi value for index i
-
+  ! Sync the local value of  m  to the shared value.
+  m_shared = m
   ! Set the accuracy
   xacc = 1.0E-11_C_DOUBLE
 
@@ -650,63 +630,54 @@ CONTAINS
   ! Thus, the PDF has integrand zeros at Im k(t) = pi/2 + m * pi/y;
   !       the CDF has integrand zeros at Im k(t) =        m * pi/y.
   ! Ensure the bounds actually bound the zero
-!WRITE(*,*)">>> IN findExactZeros: i, m, tL, tR", i, m, tL, tR
-  CALL evaluateImkM(i, tL, fL, dfL, m)
+!WRITE(*,*)">>> IN findExactZeros: m, tL, tR", i, m, tL, tR
+  CALL evaluateImkM(tL, fL, dfL, m)
 !WRITE(*,*) "fL, dfL", fL, dfL
-  CALL evaluateImkM(i, tR, fR, dfR, m)
+  CALL evaluateImkM(tR, fR, dfR, m)
 !WRITE(*,*) "fR, dfR", fR, dfR
   IF ( (fL * fR) .GT. 0.0_C_DOUBLE ) THEN
     ! Then bounds do not bound the zero
      tMid = (tL + tR) / 2.0_C_DOUBLE
  
-    CALL improveKZeroBounds(i, m, left_Of_Max, tMid, tL, tR)
+    CALL improveKZeroBounds(m, left_Of_Max, tMid, tL, tR)
     IF (Cverbose) CALL DBLEPR("Bounds do not bracket the zero (findExactZeros)", -1, fR, 1)
   END IF
   ! For robustness, use rtsafe when the  distance between zeros 
   ! is expected to be small (i.e., in the tail).
   IF ( m .LE. -3 ) THEN ! Use rtsafe whenever m is large and negative
-    CALL rtsafe(i, evaluateImkM_wrapper, tL, tR, xacc, tZero, error)
+    CALL rtsafe(evaluateImkM_wrapper, tL, tR, xacc, tZero, error)
     IF (error) CALL DBLEPR("ERROR: cannot solve", -1, tZero, 1)
   ELSE IF ( (Cpsmall) .AND. (current_y .LT. current_mu) ) THEN
     ! When small p and small y, fight harder for good starting bounds
-    CALL improveKZeroBounds(i, m, left_Of_Max, tStart, tL, tR)
-    CALL rtsafe(i, evaluateImkM_wrapper, tL, tR, xacc, tZero, error)
+    CALL improveKZeroBounds(m, left_Of_Max, tStart, tL, tR)
+    CALL rtsafe(evaluateImkM_wrapper, tL, tR, xacc, tZero, error)
     IF (error) CALL DBLEPR("ERROR: cannot solve", -1, tZero, 1)
   ELSE
     ! Default to rtnewton for "easy" cases (e.g., initial zeros)
     tstart_update = (tL + tR) / 2.0_C_DOUBLE
 !    CALL rtnewton(i, evaluateImkM_wrapper, tstart_update, xacc, tZero)
-    CALL rtsafe(i, evaluateImkM_wrapper, tL, tR, xacc, tZero, error)
+    CALL rtsafe(evaluateImkM_wrapper, tL, tR, xacc, tZero, error)
   END IF
   
 
-  CONTAINS 
-  
-    ! Define the wrapper subroutine
-    SUBROUTINE evaluateImkM_wrapper(i, x, f, df)
-      ! Evaluate  Im k(t) - m * pi (CDF) - pi/2  or  Im k(t) - m * pi (CDF)
-
-      USE ISO_C_BINDING, ONLY: C_INT, C_DOUBLE
-      ! Has access to variable  m  from the containing function/outer scope
-      
-      INTEGER(C_INT), INTENT(IN)        :: i
-      REAL(KIND=C_DOUBLE), INTENT(IN)   :: x
-      REAL(KIND=C_DOUBLE), INTENT(OUT)  :: f, df
-     
-      CALL evaluateImkM(i, x, f, df, m) ! Pass the captured 'm' value]
-
-    END SUBROUTINE evaluateImkM_wrapper
-
-  
 END SUBROUTINE findExactZeros
 
+
+! Define the wrapper subroutine
+SUBROUTINE evaluateImkM_wrapper(x, f, df)
+  ! Evaluate  Im k(t) - m * pi (CDF) - pi/2  or  Im k(t) - m * pi (CDF)
+  
+  USE Calcs_Imag, ONLY: evaluateImkM  ! Explicitly tell the wrapper where to find the math
+  IMPLICIT NONE
+
+  REAL(KIND=C_DOUBLE), INTENT(IN)   :: x
+  REAL(KIND=C_DOUBLE), INTENT(OUT)  :: f, df
+     
+  CALL evaluateImkM(x, f, df, m_shared) ! Pass the captured 'm' value
+
+END SUBROUTINE evaluateImkM_wrapper
+
+  
   
 END MODULE Calcs_K
-
-
-
-
-
-
-
 

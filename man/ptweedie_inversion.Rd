@@ -42,7 +42,7 @@ for which very good numerical approximation are available in R.
 }
 \examples{
 # Plot a Tweedie distribution function
-y <- seq(0, 5, length = 100)
+y <- seq(0.01, 4, length = 50)
 Fy <- ptweedie_inversion(y, mu = 1, phi = 1, power = 1.1)
 plot(y, Fy, type = "l", lwd = 2, ylab = "Distribution function")
 

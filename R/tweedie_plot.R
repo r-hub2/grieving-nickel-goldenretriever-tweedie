@@ -16,7 +16,7 @@
 #' @param ... plotting parameters passed to \code{plot()}.
 #' 
 #' @examples
-#' y <- seq(0, 5, length = 100)
+#' y <- seq(0, 4, length = 50)
 #' tweedie_plot(y, power = 1.1, mu = 1, phi = 1)
 #' 
 #' 

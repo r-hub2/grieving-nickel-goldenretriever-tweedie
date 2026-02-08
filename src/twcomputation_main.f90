@@ -3,6 +3,7 @@ SUBROUTINE twcomputation_main(N, p, phi, y, mu, verbose, pdf, funvalue, exitstat
   ! Calls FORTRAN to compute the integral; set up common parameters
   USE tweedie_params_mod
   USE ISO_C_BINDING, ONLY: C_INT, C_DOUBLE
+  USE R_interfaces
 
   IMPLICIT NONE
 
@@ -10,8 +11,8 @@ SUBROUTINE twcomputation_main(N, p, phi, y, mu, verbose, pdf, funvalue, exitstat
   REAL(KIND=C_DOUBLE), INTENT(IN)   :: p
   REAL(KIND=C_DOUBLE), INTENT(IN)   :: phi(N), y(N), mu(N)
   REAL(KIND=C_DOUBLE), INTENT(OUT)  :: funvalue(N)
-  INTEGER(C_INT), INTENT(OUT)       :: exitstatus
-  REAL(KIND=C_DOUBLE), INTENT(OUT)  :: relerr
+  INTEGER(C_INT), INTENT(OUT)       :: exitstatus(N)
+  REAL(KIND=C_DOUBLE), INTENT(OUT)  :: relerr(N)
   INTEGER(C_INT), INTENT(OUT)       :: Int_Regions(N)
   
   INTEGER(C_INT)        :: i, Int_RegionsTMP, istat
@@ -28,9 +29,9 @@ SUBROUTINE twcomputation_main(N, p, phi, y, mu, verbose, pdf, funvalue, exitstat
       IMPLICIT NONE
       INTEGER(C_INT), INTENT(IN)                :: i
       REAL(KIND=C_DOUBLE), INTENT(OUT)          :: funvalueI
-      INTEGER(C_INT), INTENT(OUT)               :: exitstatus
       REAL(KIND=C_DOUBLE), INTENT(OUT)          :: relerr
       INTEGER(C_INT), INTENT(OUT)               :: Int_Regions
+      INTEGER(C_INT), INTENT(OUT)               :: exitstatus
     END SUBROUTINE TweedieIntegration
 
   END INTERFACE
@@ -41,14 +42,14 @@ SUBROUTINE twcomputation_main(N, p, phi, y, mu, verbose, pdf, funvalue, exitstat
   IF (.NOT. ALLOCATED(Cy)) THEN
       ALLOCATE(Cy(N), Cmu(N), Cphi(N), STAT=istat)
       IF (istat /= 0) THEN
-        CALL INTPR("Allocation failed!", 0)
+        ! CALL INTPR("Allocation failed!", 0)
         RETURN
       END IF
   ELSE IF (SIZE(Cy) .NE. N) THEN
       DEALLOCATE(Cy, Cmu, Cphi)
       ALLOCATE(Cy(N), Cmu(N), Cphi(N), STAT=istat)
       IF (istat /= 0) THEN
-        CALL INTPR("Allocation failed!", 0)
+        ! CALL INTPR("Allocation failed!", 0)
         RETURN
       END IF
   END IF
@@ -82,7 +83,7 @@ SUBROUTINE twcomputation_main(N, p, phi, y, mu, verbose, pdf, funvalue, exitstat
 
   ! Loop over N values
   DO i = 1, N
-    CALL TweedieIntegration(i, funvalueTMP, exitstatus, relerr, Int_RegionsTMP)
+    CALL TweedieIntegration(i, funvalueTMP, exitstatus(i), relerr(i), Int_RegionsTMP)
     funvalue(i) = funvalueTMP
     Int_Regions(i) = Int_RegionsTMP
   END DO

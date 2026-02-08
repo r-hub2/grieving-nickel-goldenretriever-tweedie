@@ -34,7 +34,7 @@
 #'
 #' @examples
 #' # Plot a Tweedie distribution function
-#' y <- seq(0, 5, length = 100)
+#' y <- seq(0.01, 4, length = 50)
 #' Fy <- ptweedie_inversion(y, mu = 1, phi = 1, power = 1.1)
 #' plot(y, Fy, type = "l", lwd = 2, ylab = "Distribution function")
 #' 
@@ -94,10 +94,6 @@ ptweedie_inversion <- function(q, mu, phi, power, verbose = FALSE, details = FAL
                        TRUE, 
                        FALSE )
   
-    # Initialise
-    exitstatus_scalar <- as.integer(0)
-    relerr_scalar     <- as.double(0.0)
-    its_scalar        <- as.integer(0)
     ### END SET UP
   
     if (N_nonSpecial > 0 ) {
@@ -110,10 +106,10 @@ ptweedie_inversion <- function(q, mu, phi, power, verbose = FALSE, details = FAL
                  verbose     = as.integer(verbose),                   # verbosity
                  pdf         = as.integer(0),                         # 0: FALSE, as this is the CDF not PDF
                  # THE OUTPUTS:
-                 funvalue    = as.double(rep(0, N_nonSpecial)),       # funvalue
-                 exitstatus  = as.integer(0),                         # exitstatus
-                 relerr      = as.double(0),                          # relerr
-                 its         = as.integer(rep(0, N_nonSpecial)),      # its
+                 funvalue    = numeric(N_nonSpecial),                 # funvalue
+                 exitstatus  = integer(N_nonSpecial),                 # exitstatus
+                 relerr      = numeric(N_nonSpecial),                 # relerr
+                 its         = integer(N_nonSpecial),                 # its
                  PACKAGE     = "tweedie")
       cdf[!special_y_cases] <- tmp$funvalue
       regions[!special_y_cases] <- tmp$its

@@ -1,9 +1,17 @@
-tweedie 3.0.6 (Release date: 2026-01-30)
+tweedie 3.0.13 (Release dat3)
 ==============
 
 Changes:
 
-* Trying to fix an obscure bug that only presents on Debian.
+* Improved the vignette
+
+
+tweedie 3.0.12 (Release date: 2026-02-07)
+==============
+
+Changes:
+
+* Trying to fix bugs that pop up (seemingly at random) with rhub etc. checks.
 
 
 

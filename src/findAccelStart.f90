@@ -1,4 +1,4 @@
-SUBROUTINE findAccelStart(i, tmax, tStartAcc) 
+SUBROUTINE findAccelStart(tmax, tStartAcc) 
   ! Find the value of t for when to invoke the acceleration algorithm 
   
   USE tweedie_params_mod
@@ -8,18 +8,11 @@ SUBROUTINE findAccelStart(i, tmax, tStartAcc)
   
   REAL(KIND=C_DOUBLE), INTENT(IN)   :: tmax     
   REAL(KIND=C_DOUBLE), INTENT(OUT)  :: tStartAcc     ! The output starting point for acceleration
-  INTEGER(C_INT), INTENT(IN)        :: i
 
   REAL(KIND=C_DOUBLE)               :: pi, t_nmax
   INTEGER(C_INT)                    :: n_max
-  REAL(KIND=C_DOUBLE)               :: current_y, current_mu, current_phi
-  
-  ! Grab the relevant scalar values for this iteration:
-  current_y    = Cy(i)    ! Access y value for index i
-  current_mu   = Cmu(i)   ! Access mu value for index i
-  current_phi  = Cphi(i)  ! Access phi value for index i
-  
-  
+
+
   pi = 4.0_C_DOUBLE * DATAN(1.0_C_DOUBLE)
   
   ! Start acceleration once the largest t of the region to integrate

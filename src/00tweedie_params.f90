@@ -12,5 +12,9 @@ MODULE tweedie_params_mod
   LOGICAL(C_BOOL)                   :: CpSmall, Cverbose, Cpdf
   INTEGER(C_INT)                    :: CN
   
+
+  REAL(KIND=C_DOUBLE) :: current_y, current_mu, current_phi
+  INTEGER(C_INT)      :: m_shared
+
 END MODULE tweedie_params_mod
 
