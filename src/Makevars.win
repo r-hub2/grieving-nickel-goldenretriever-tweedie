@@ -2,7 +2,8 @@
 PKG_LIBS = $(LAPACK_LIBS) $(BLAS_LIBS) $(SHLIB_OPENMP_LIBS) $(FLIBS)
 
 # EVERY .f90 file from your 'ls' must have a matching .o here:
-OBJECTS = 00tweedie_params.o \
+OBJECTS = init.o \
+          00tweedie_params.o \
           rprintf_mod.o \
           R_interfaces.o \
           Calcs_Real.o \

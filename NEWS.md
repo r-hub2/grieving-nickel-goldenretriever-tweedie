@@ -3,7 +3,7 @@ tweedie 3.0.13 (Release dat3)
 
 Changes:
 
-* Improved the vignette
+* Improved the vignette.
 
 
 tweedie 3.0.12 (Release date: 2026-02-07)
