@@ -89,3 +89,46 @@ out <- tweedie::tweedie_profile(y ~ 1,
 # The estimated power index:
 out$xi.max
 
+## ----PSNLoad------------------------------------------------------------------
+poison <- read.csv(system.file("extdata", "poison.csv", package = "tweedie"))
+
+# Convert to factors:
+poison$Psn <- factor(poison$Psn)
+poison$Trmt <- factor(poison$Trmt)
+
+head(poison)
+
+## ----PSNPlotPsn---------------------------------------------------------------
+plot(Time ~ Psn,
+     data = poison,
+     xlab = "Poison type",
+     ylab = "Survival time (tens of hours)",
+     las = 1)
+
+## ----PSNPlotTmt---------------------------------------------------------------
+plot(Time ~ Trmt,
+     data = poison,
+     xlab = "Treatment type",
+     ylab = "Survival time (tens of hours)",
+     las = 1)
+
+## ----PSNProfile---------------------------------------------------------------
+PSNPrf <- tweedie_profile(Time ~ Trmt + Psn, data = poison, 
+                          do.plot = TRUE, xi.vec = seq(2.5, 5.5, length = 11) )
+
+## ----PSNXi--------------------------------------------------------------------
+PSNPrf$xi.max
+
+## ----PSNModel-----------------------------------------------------------------
+PSNMod <- glm(Time ~ Trmt + Psn, 
+              data = poison,
+              family=statmod::tweedie(var = 4, link.power = 0))
+anova(PSNMod, test = "F")
+
+## ----PSNRes-------------------------------------------------------------------
+qr <- statmod::qresid(PSNMod)
+qqnorm(qr,
+       las = 1)
+qqline(qr,
+       col = "grey")
+

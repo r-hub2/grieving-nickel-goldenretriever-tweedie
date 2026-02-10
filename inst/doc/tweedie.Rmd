@@ -45,7 +45,7 @@ For $1 < \xi < 2$, Tweedie distributions can be represented as a Poisson sum of 
 These distributions are continuous for $Y > 0$ but have a discrete mass at $Y = 0$.
 
 
-## Examples
+## Use cases
 
 Likelihood computations are not need to fit a Tweedie generalized linear model, using the `tweedie()` family from the [**statmod** package](https://CRAN.R-project.org/package=statmod) (@smythStatmodStatisticalModeling2025, @dunnGeneralizedLinearModels2018):
 
@@ -157,7 +157,7 @@ qqline(qr,
 The quantile residuals suggest the model may not be adequate.
 
 
-# Estimating $\xi$
+### Estimating $\xi$
 
 To use a Tweedie distribution in a glm, the value of $\xi$ is needed.
 To find the most suitable value of $\xi$, **tweedie_profile()** can be used [@dunnGeneralizedLinearModels2018]:
@@ -172,4 +172,76 @@ out$xi.max
 ```
 
 
-# References
+## Example
+
+Consider the `poison` data in the `GLMsData` package [@dunnGLMsData], which records the survival times of animals under various treatments and poisons (used in @dunnGeneralizedLinearModels2018, Sect. 12.4.2). 
+For convenience, a copy is included with this package:
+
+```{r PSNLoad}
+poison <- read.csv(system.file("extdata", "poison.csv", package = "tweedie"))
+
+# Convert to factors:
+poison$Psn <- factor(poison$Psn)
+poison$Trmt <- factor(poison$Trmt)
+
+head(poison)
+```
+
+The survival time is likely related to the poison type and type of treatment:
+
+```{r PSNPlotPsn}
+plot(Time ~ Psn,
+     data = poison,
+     xlab = "Poison type",
+     ylab = "Survival time (tens of hours)",
+     las = 1)
+```
+```{r PSNPlotTmt}
+plot(Time ~ Trmt,
+     data = poison,
+     xlab = "Treatment type",
+     ylab = "Survival time (tens of hours)",
+     las = 1)
+```
+
+In both cases, the variance of the survival times seems to increase with the mean survival time.
+Perhaps a Tweedie glm would be appropriate.
+To fit a Tweedie glm, the value of $\xi$ is needed; since no exact zeros are present (or possible) for the survival times, very likely $\xi \ge 2$:
+
+
+```{r PSNProfile}
+PSNPrf <- tweedie_profile(Time ~ Trmt + Psn, data = poison, 
+                          do.plot = TRUE, xi.vec = seq(2.5, 5.5, length = 11) )
+```
+
+Then, $\xi\approx 4$:
+
+```{r PSNXi}
+PSNPrf$xi.max
+```
+
+
+So then the Tweedie glm can be fitted:
+
+```{r PSNModel}
+PSNMod <- glm(Time ~ Trmt + Psn, 
+              data = poison,
+              family=statmod::tweedie(var = 4, link.power = 0))
+anova(PSNMod, test = "F")
+```
+
+Quantile residuals can be used to assess the model:
+
+```{r PSNRes}
+qr <- statmod::qresid(PSNMod)
+qqnorm(qr,
+       las = 1)
+qqline(qr,
+       col = "grey")
+```
+
+The quantile residuals suggest that this model looks fine.
+
+
+
+## References

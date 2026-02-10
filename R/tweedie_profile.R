@@ -419,6 +419,7 @@ tweedie_profile <- function(formula,
                                      phi = phi, 
                                      eps = eps)
       } else {
+
         if (p == 2) {
           L[i] <- sum( log( dgamma( rate = 1 / (phi * mu), 
                                     shape = 1 / phi, 
@@ -506,7 +507,7 @@ tweedie_profile <- function(formula,
       #         phi.vec.fix <- phi.vec.fix[ !is.infinite(L.fix) ]
       #         L.fix <- L.fix[ !is.infinite(L.fix) ]
       
-      if (verbose >= 1) cat("Smooth perhaps inaccurate--log-likelihood contains  Inf  or  NA.\n")
+      cat("Smooth perhaps inaccurate--log-likelihood contains  Inf  or  NA.\n")
     }
     #else {
     
@@ -517,19 +518,19 @@ tweedie_profile <- function(formula,
       # Smooth the points
       # - get smoothing spline
       ss <- stats::splinefun( xi.vec.fix, 
-                       L.fix )
+                              L.fix )
       
       # Plot smoothed data
       xi.smooth <- seq(min(xi.vec.fix), 
                        max(xi.vec.fix), 
                        length = 50 )
       L.smooth <- ss(xi.smooth )
-      
+            
       if ( do.plot) {
         keep.these <- is.finite(L.smooth) & !is.na(L.smooth)
         L.smooth <- L.smooth[ keep.these ] 
         xi.smooth <- xi.smooth[ keep.these ] 
-        if ( verbose>=1 & any( !keep.these ) ) {
+        if ( (verbose >= 1) & any( !keep.these ) ) {
           cat(" (Some values of L are infinite or NA for the smooth; these are ignored)\n")
         }
         
@@ -554,6 +555,7 @@ tweedie_profile <- function(formula,
                         col = "gray",
                         lwd = 2)
       }
+
       x <- xi.smooth
       y <- L.smooth
       
@@ -594,6 +596,11 @@ tweedie_profile <- function(formula,
     x <- xi.vec
     y <- L
   }
+  
+  if ( any( is.infinite(y)) | any(is.na(y)) ) {
+    cat(" WARNING: Some values of L are infinite or NA\n")
+  }
+  
   if (verbose >= 2) cat(" Done\n")
   
   ### Maximum likelihood estimates
