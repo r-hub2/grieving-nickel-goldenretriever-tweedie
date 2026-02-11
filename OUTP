@@ -1,0 +1,2011 @@
+diff --git a/DESCRIPTION b/DESCRIPTION
+index 92a6f3e..4145c2e 100644
+--- a/DESCRIPTION
++++ b/DESCRIPTION
+@@ -1,6 +1,6 @@
+ Package: tweedie
+-Version: 3.0.11
+-Date: 2026-07-01
++Version: 3.0.13
++Date: 2026-09-01
+ Title: Evaluation of Tweedie Exponential Family Models
+ Authors@R: person("Peter K.", "Dunn", email = "pdunn2@usc.edu.au", role = c("cre", "aut") )
+ Depends: R (>= 2.8.0)
+diff --git a/NEWS.md b/NEWS.md
+index 0f6f10d..8073a21 100644
+--- a/NEWS.md
++++ b/NEWS.md
+@@ -1,4 +1,16 @@
+-tweedie 3.0.11 (Release date: 2026-02-07)
++tweedie 3.0.13 (Release dat3)
++==============
++
++Changes:
++
++* Improved the vignette.
++* Some internal renaming.
++* Fix some xi = 1 cases (thanks Milan Bouchet-Valat).
++* Relocate some messages in tweedie_profile().
++* Add poison example to vignette.
++
++
++tweedie 3.0.12 (Release date: 2026-02-07)
+ ==============
+ 
+ Changes:
+diff --git a/R/tweedie-internals.R b/R/tweedie-internals.R
+index 40f6f19..273d1ae 100644
+--- a/R/tweedie-internals.R
++++ b/R/tweedie-internals.R
+@@ -27,7 +27,6 @@ dtweedie_logl <- function(phi, y, mu, power) {
+   
+   # Peter Dunn
+   # 26 April 2001
+-  
+   sum( log( dtweedie( y = y, 
+                       mu = mu, 
+                       phi = phi, 
+@@ -70,7 +69,7 @@ dtweedie_series_bigp <- function(power, y, mu, phi){
+   #
+   # Error traps
+   #
+-  
++
+   if ( power < 2) stop("power must be greater than 2.")
+   if ( any(phi <= 0) ) stop("phi must be positive.")
+   if ( any(y <= 0) ) stop("y must be a strictly positive vector.")
+@@ -122,7 +121,7 @@ dtweedie_dldphi <- function(phi, mu, power, y ){
+   # Peter Dunn
+   # 31 Jan 2001
+   #
+-  
++
+   if ( (power != 2 ) & ( power != 1 ) ) {
+     
+     k <- phi ^ (1 / (power - 2))
+@@ -179,7 +178,6 @@ dtweedie_dlogfdphi <- function(y, mu, phi, power)
+   # Peter Dunn
+   # 31 Jan 2001
+   #
+-  
+   p <- power
+   a <- (2 - p) / (1 - p)
+   if(length(phi) == 1) {
+@@ -260,8 +258,3 @@ dtweedie_dlogfdphi <- function(y, mu, phi, power)
+ }
+ 
+ 
+-
+-
+-#############################################################################
+-
+-
+diff --git a/R/tweedie_profile.R b/R/tweedie_profile.R
+index 83ccc49..a855e09 100644
+--- a/R/tweedie_profile.R
++++ b/R/tweedie_profile.R
+@@ -419,6 +419,7 @@ tweedie_profile <- function(formula,
+                                      phi = phi, 
+                                      eps = eps)
+       } else {
++
+         if (p == 2) {
+           L[i] <- sum( log( dgamma( rate = 1 / (phi * mu), 
+                                     shape = 1 / phi, 
+@@ -506,7 +507,7 @@ tweedie_profile <- function(formula,
+       #         phi.vec.fix <- phi.vec.fix[ !is.infinite(L.fix) ]
+       #         L.fix <- L.fix[ !is.infinite(L.fix) ]
+       
+-      if (verbose >= 1) cat("Smooth perhaps inaccurate--log-likelihood contains  Inf  or  NA.\n")
++      cat("Smooth perhaps inaccurate--log-likelihood contains  Inf  or  NA.\n")
+     }
+     #else {
+     
+@@ -517,19 +518,19 @@ tweedie_profile <- function(formula,
+       # Smooth the points
+       # - get smoothing spline
+       ss <- stats::splinefun( xi.vec.fix, 
+-                       L.fix )
++                              L.fix )
+       
+       # Plot smoothed data
+       xi.smooth <- seq(min(xi.vec.fix), 
+                        max(xi.vec.fix), 
+                        length = 50 )
+       L.smooth <- ss(xi.smooth )
+-      
++            
+       if ( do.plot) {
+         keep.these <- is.finite(L.smooth) & !is.na(L.smooth)
+         L.smooth <- L.smooth[ keep.these ] 
+         xi.smooth <- xi.smooth[ keep.these ] 
+-        if ( verbose>=1 & any( !keep.these ) ) {
++        if ( (verbose >= 1) & any( !keep.these ) ) {
+           cat(" (Some values of L are infinite or NA for the smooth; these are ignored)\n")
+         }
+         
+@@ -554,6 +555,7 @@ tweedie_profile <- function(formula,
+                         col = "gray",
+                         lwd = 2)
+       }
++
+       x <- xi.smooth
+       y <- L.smooth
+       
+@@ -594,6 +596,11 @@ tweedie_profile <- function(formula,
+     x <- xi.vec
+     y <- L
+   }
++  
++  if ( any( is.infinite(y)) | any(is.na(y)) ) {
++    cat(" WARNING: Some values of L are infinite or NA\n")
++  }
++  
+   if (verbose >= 2) cat(" Done\n")
+   
+   ### Maximum likelihood estimates
+diff --git a/R/utils.R b/R/utils.R
+index ade9545..3978e28 100644
+--- a/R/utils.R
++++ b/R/utils.R
+@@ -190,10 +190,10 @@ special_cases <- function(y, mu, phi, power, type = "PDF", verbose = FALSE, IGex
+     if ( power == 1) {
+       if (verbose) cat("power = 1 (Poisson case)\n")
+       if (type == "PDF"){
+-        f <- stats::dpois(y, 
++        f <- stats::dpois(y/phi, 
+                           lambda = mu / phi )
+       } else {
+-        f <- stats::ppois(y, 
++        f <- stats::ppois(y/phi, 
+                           lambda = mu / phi )
+       }
+     }
+diff --git a/inst/extdata/poison.csv b/inst/extdata/poison.csv
+new file mode 100644
+index 0000000..d09549d
+--- /dev/null
++++ b/inst/extdata/poison.csv
+@@ -0,0 +1,49 @@
++"Psn","Trmt","Time"
++"I","A",0.31
++"I","A",0.45
++"I","A",0.46
++"I","A",0.43
++"I","B",0.82
++"I","B",1.1
++"I","B",0.88
++"I","B",0.72
++"I","C",0.43
++"I","C",0.45
++"I","C",0.63
++"I","C",0.76
++"I","D",0.45
++"I","D",0.71
++"I","D",0.66
++"I","D",0.62
++"II","A",0.36
++"II","A",0.29
++"II","A",0.4
++"II","A",0.23
++"II","B",0.92
++"II","B",0.61
++"II","B",0.49
++"II","B",1.24
++"II","C",0.44
++"II","C",0.35
++"II","C",0.31
++"II","C",0.4
++"II","D",0.56
++"II","D",1.02
++"II","D",0.71
++"II","D",0.38
++"III","A",0.22
++"III","A",0.21
++"III","A",0.18
++"III","A",0.23
++"III","B",0.3
++"III","B",0.37
++"III","B",0.38
++"III","B",0.29
++"III","C",0.23
++"III","C",0.25
++"III","C",0.24
++"III","C",0.22
++"III","D",0.3
++"III","D",0.36
++"III","D",0.31
++"III","D",0.33
+diff --git a/src/00tweedie_params.f90 b/src/00tweedie_params.f90
+index 825225b..0ff94d9 100644
+--- a/src/00tweedie_params.f90
++++ b/src/00tweedie_params.f90
+@@ -16,5 +16,7 @@ MODULE tweedie_params_mod
+   REAL(KIND=C_DOUBLE) :: current_y, current_mu, current_phi
+   INTEGER(C_INT)      :: m_shared
+ 
++  REAL(KIND=C_DOUBLE), PARAMETER :: PI = 4.0_C_DOUBLE * DATAN(1.0_C_DOUBLE)
++
+ END MODULE tweedie_params_mod
+ 
+diff --git a/src/Calcs_Imag.f90 b/src/Calcs_Imag.f90
+index 4bbf5e9..41b45c2 100644
+--- a/src/Calcs_Imag.f90
++++ b/src/Calcs_Imag.f90
+@@ -11,35 +11,30 @@ MODULE Calcs_Imag
+   
+ CONTAINS
+ 
+-  SUBROUTINE evaluateImk(t, Imk, error) 
++  SUBROUTINE evaluateImk(t, Imk, errorHere) 
+     ! Evaluate Im k(t)
+     
+     IMPLICIT NONE
+     
+     REAL(KIND=C_DOUBLE), INTENT(IN)     :: t
+     REAL(KIND=C_DOUBLE), INTENT(OUT)    :: Imk
+-    LOGICAL(C_BOOL), INTENT(OUT)        :: error
++    LOGICAL(C_BOOL), INTENT(OUT)        :: errorHere
+     
+-    REAL(KIND=C_DOUBLE)   :: tanArg, omega, front, alpha, pi
++    REAL(KIND=C_DOUBLE)   :: tanArg, omega, front, alpha
+ 
+   
+     ! Initialisation
+-    error = .FALSE.
+-    pi = 4.0_C_DOUBLE * DATAN(1.0_C_DOUBLE)
++    errorHere = .FALSE.
++    Imk = 0.0_C_DOUBLE
++    
+     front = current_mu ** (2.0_C_DOUBLE - Cp) / ( current_phi * (2.0_C_DOUBLE - Cp))
+     tanArg = (1.0_C_DOUBLE - Cp) * t * current_phi  / (current_mu ** (1.0_C_DOUBLE - Cp) )
+     omega = DATAN( tanArg )
+   
+     IF ((omega .GT. 0.0_C_DOUBLE ) .OR.    &    
+-        (omega .LT. (-pi/2.0_C_DOUBLE)) ) THEN
+-      ! CALL DBLEPR("ERROR (evaluateImk): Omega out of range:", -1, omega, 1)
+-      ! CALL DBLEPR("ERROR (evaluateImk): t:", -1, t, 1)
+-      ! CALL DBLEPR("         p:", -1, Cp, 1)
+-      ! CALL DBLEPR("         y:", -1, current_y, 1)
+-      ! CALL DBLEPR("        mu:", -1, current_mu, 1)
+-      ! CALL DBLEPR("       phi:", -1, current_phi, 1)
+-
+-      error = .TRUE.
++        (omega .LT. (-PI/2.0_C_DOUBLE)) ) THEN
++      errorHere = .TRUE.
++      IF (Cverbose) CALL DBLEPR("ERROR: Imk: omega out of bounds:", -1, omega, 1)
+       RETURN
+     END IF
+     alpha = (2.0_C_DOUBLE - Cp)/(1.0_C_DOUBLE - Cp)
+@@ -51,84 +46,122 @@ CONTAINS
+   
+   END SUBROUTINE evaluateImk
+   
+-  
++  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+   
+ 
+-  SUBROUTINE evaluateImkM(t, f, df, m)
++  SUBROUTINE evaluateImkM(t, f, df, m, error)
+     ! Evaluate  Im k(t) - m*pi - pi/2  (PDF) or  Im k(t) - m*pi  (CDF) for 
+     ! finding the zeros of the integrand, for the PDf and CDF
+     REAL(KIND=C_DOUBLE), INTENT(IN)   :: t
+     REAL(KIND=C_DOUBLE), INTENT(OUT)  :: f, df
+     INTEGER(C_INT), INTENT(IN)        :: m
+-  
+-    REAL(KIND=C_DOUBLE)               :: pi, Imk_val
+     LOGICAL(C_BOOL)                   :: error
+-  
+-    pi = 4.0_C_DOUBLE * DATAN(1.0_C_DOUBLE)
+-    CALL evaluateImk(t, Imk_val, error)
+-    IF (error) CALL DBLEPR("ERROR: integrand zero =", -1, t, 1)
+ 
++    REAL(KIND=C_DOUBLE)               :: Imk_val
++    LOGICAL(C_BOOL)                   :: errorHere
++  
++    
++    ! Initialise
++    f = 0.0_C_DOUBLE
++    df = 0.0_C_DOUBLE
++    errorHere = .FALSE.
++    
++    CALL evaluateImk(t, Imk_val, errorHere)
++    IF (errorHere) THEN
++      IF (Cverbose) CALL DBLEPR("ERROR: error evaluating evaluate Im k(t) =", -1, t, 1)
++      error = .TRUE.
++      RETURN
++    END IF
++  
+     ! The expression depends on whether we are working with the PDF or the CDF.
+     ! The PDF uses cos Im k(t) in the integrand; the CDF has sin Im k(t) in the integrand.
+     ! Thus, the PDF has integrand zeros at Im k(t) = pi/2 + m pi/y;
+     !       the CDF has integrand zeros at Im k(t) =        m pi/y.
+     IF (Cpdf) THEN
+-      f = Imk_val - REAL(m, KIND=C_DOUBLE) * pi - pi/2.0_C_DOUBLE
++      f = Imk_val - REAL(m, KIND=C_DOUBLE) * PI - PI/2.0_C_DOUBLE
+     ELSE
+-      f = Imk_val - REAL(m, KIND=C_DOUBLE) * pi
++      f = Imk_val - REAL(m, KIND=C_DOUBLE) * PI
++    END IF
++    CALL evaluateImkd(t, df, errorHere)
++    IF (errorHere) THEN
++      error = .TRUE.
++      IF (Cverbose) CALL DBLEPR("ERROR: Im k(t) - m:", -1, f, 1)
++      RETURN
+     END IF
+-    CALL evaluateImkd(t, df)
+     
+   END SUBROUTINE evaluateImkM
+ 
++  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+ 
+-
+-
+-  SUBROUTINE evaluateImkd(t, Imkd) 
++  SUBROUTINE evaluateImkd(t, Imkd, errorHere)
+     ! Evaluate Im k'(t)
+     
+     IMPLICIT NONE
+     
+     REAL(KIND=C_DOUBLE), INTENT(IN)   :: t
+     REAL(KIND=C_DOUBLE), INTENT(OUT)  :: Imkd  ! The result of the calculation
+-    
++    LOGICAL(C_BOOL), INTENT(OUT)      :: errorHere
+     REAL(KIND=C_DOUBLE) :: omega, pindex
+ 
+   
++    ! Initlaise
++    Imkd = 0.0_C_DOUBLE
++    errorHere = .FALSE.
++    
+     pindex = 1.0_C_DOUBLE / (1.0_C_DOUBLE - Cp)
+     omega = DATAN( ( (1.0_C_DOUBLE - Cp) * t * current_phi) / (current_mu ** (1.0_C_DOUBLE - Cp) ) )
++
++    IF ((omega .GT. 0.0_C_DOUBLE ) .OR.    &    
++        (omega .LT. (-PI/2.0_C_DOUBLE)) ) THEN
++      IF (Cverbose) CALL DBLEPR("ERROR: Imkd: omega out of bounds:", -1, omega, 1)
++      errorHere = .TRUE.
++      
++      RETURN
++    END IF
+     
+     Imkd = current_mu * (DCOS(omega * pindex) / (DCOS(omega) ** pindex)) - current_y
+   
+   END SUBROUTINE evaluateImkd
+ 
+ 
++  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+ 
+ 
+-
+-  SUBROUTINE evaluateImkdd(t, Imkdd)
++  SUBROUTINE evaluateImkdd(t, Imkdd, errorHere)
+     ! Evaluate Im k''(t)
+     
+     IMPLICIT NONE
+   
+     REAL(KIND=C_DOUBLE), INTENT(IN)   :: t
+     REAL(KIND=C_DOUBLE), INTENT(OUT)  :: Imkdd
++    LOGICAL(C_BOOL), INTENT(INOUT)    :: errorHere
+     
+     REAL(KIND=C_DOUBLE)    :: front, omega, pindex
+ 
+-
++    
++    ! Initialise
++    Imkdd = 0.0_C_DOUBLE
++    errorHere = .FALSE.
++    
+     pindex = Cp / (1.0_C_DOUBLE - Cp)
+     front = -current_phi * current_mu ** (Cp/(1.0_C_DOUBLE - Cp))
+     omega = DATAN( ( (1.0_C_DOUBLE - Cp) * t * current_phi) / (current_mu ** (1.0_C_DOUBLE - Cp) ) )
++    
++    IF ((omega .GT. 0.0_C_DOUBLE ) .OR.    &    
++        (omega .LT. (-PI/2.0_C_DOUBLE)) ) THEN
++      IF (Cverbose) CALL DBLEPR("ERROR: Imkdd: omega out of bounds:", -1, omega, 1)
++      errorHere = .TRUE.
++      RETURN
++    END IF
++
+   
+     Imkdd = front * (DSIN(omega * pindex) / (DCOS(omega) ** pindex) )
+   
+   END SUBROUTINE evaluateImkdd
+   
++  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+ 
+-  
+-  
+-  SUBROUTINE evaluateImkdZero(t, f, df) 
++  SUBROUTINE evaluateImkdZero(t, f, df, error) 
+   ! Evaluate Im k'(t)  and  Im k''(t)  for solving for Kmax (i.e., Im k'(t) = 0)
+     
+     USE ISO_C_BINDING, ONLY: C_INT, C_DOUBLE
+@@ -137,11 +170,19 @@ CONTAINS
+   
+     REAL(KIND=C_DOUBLE), INTENT(IN)     :: t
+     REAL(KIND=C_DOUBLE), INTENT(OUT)    :: f, df
++    LOGICAL(C_BOOL), INTENT(INOUT)      :: error
+   
+     REAL(KIND=C_DOUBLE)  :: Imkd, Imkdd
+   
+-    CALL evaluateImkd( t, Imkd)
+-    CALL evaluateImkdd(t, Imkdd)
++    ! Initialise
++    f = 0.0_C_DOUBLE
++    df = 0.0_C_DOUBLE
++    
++    CALL evaluateImkd( t, Imkd, error)
++    IF (error) RETURN
++  
++    CALL evaluateImkdd(t, Imkdd, error)
++    IF (error) RETURN
+   
+     f  = Imkd
+     df = Imkdd
+diff --git a/src/Calcs_K.f90 b/src/Calcs_K.f90
+index 27188a5..1ea9759 100644
+--- a/src/Calcs_K.f90
++++ b/src/Calcs_K.f90
+@@ -16,7 +16,7 @@ MODULE Calcs_K
+ CONTAINS
+ 
+   
+-  SUBROUTINE findKmax(i, kmax, tmax, mmax, mfirst, left_Of_Max)
++  SUBROUTINE findKmax(i, kmax, tmax, mmax, mfirst, left_Of_Max, error)
+     ! Finds the value of Kmax, Tmax, and Mmax.
+     ! Also return the first value of m (mfirst) amd whether this is to the left of the max (left_Of_Max).
+   
+@@ -24,17 +24,18 @@ CONTAINS
+     USE ISO_C_BINDING, ONLY: C_INT, C_DOUBLE, C_BOOL
+     USE Calcs_Imag
+     USE Calcs_Solvers
++    
+     IMPLICIT NONE
+     
+     REAL(KIND=C_DOUBLE), INTENT(OUT)    :: kmax, tmax
+     INTEGER(C_INT), INTENT(OUT)         :: mmax, mfirst
+     LOGICAL(C_BOOL), INTENT(OUT)        :: left_Of_Max
+     INTEGER(C_INT), INTENT(IN)          :: i
++    LOGICAL(C_BOOL)                     :: error
+   
+-    REAL(KIND=C_DOUBLE)     :: pi, t_Start_Point, slope_At_Zero, Imk_value
++    REAL(KIND=C_DOUBLE)     :: t_Start_Point, slope_At_Zero, Imk_value
+     REAL(KIND=C_DOUBLE)     :: aimrerr, tmaxL, tmaxR, ratio, threshold, t_small
+-    LOGICAL(C_BOOL)         :: error
+-    
++    LOGICAL(C_BOOL)         :: errorHere
+     
+     ! Grab the relevant scalar values for this iteration:
+     current_y    = Cy(i)    ! Access y value for index i
+@@ -50,21 +51,18 @@ CONTAINS
+     !       a. If p near 1, approximate starting point by p=1 case analytically
+     !       b. Otherwise, use standard starting point
+   
+-  
+-    ! Grab the relevant scalar values for this iteration:
+-    current_y    = Cy(i)    ! Access y value for index i
+-    current_mu   = Cmu(i)   ! Access mu value for index i
+-    current_phi  = Cphi(i)  ! Access phi value for index i
+-    
+     
+     ! --- Initialization ---
+     aimrerr = 1.0E-09_C_DOUBLE
+-    pi = 4.0_C_DOUBLE * DATAN(1.0_C_DOUBLE)
+     threshold = 1.0E5_C_DOUBLE ! Threshold for a "large" tmax
+   
+   
+     ! Find starting points
+-    CALL evaluateImkd(0.0_C_DOUBLE, slope_At_Zero)
++    CALL evaluateImkd(0.0_C_DOUBLE, slope_At_Zero, errorHere)
++    IF (errorHere) THEN
++      error = .TRUE.
++      IF (Cverbose) CALL DBLEPR("ERROR: Evakuating Imkd: t", -1, slope_At_Zero, 1)
++    END IF
+ 
+     IF (slope_At_Zero .LE. 0.0_C_DOUBLE) THEN
+       ! A. Im k(t) initially heads DOWNWARDS
+@@ -102,9 +100,12 @@ CONTAINS
+   
+         tmax = threshold
+         t_Start_Point = tInitialGuess()   ! This computes large-t approx
+-        CALL evaluateImk(tmax, kmax, error)    ! Now find the corresponding value of kmax
+-        IF (error) CALL DBLEPR("ERROR: integrand zero =", -1, t_Start_Point, 1)
+-  
++        CALL evaluateImk(tmax, kmax, errorHere)    ! Now find the corresponding value of kmax
++        IF (errorHere) THEN
++          error = .TRUE.
++          IF (Cverbose) CALL DBLEPR("ERROR: Evakuating Imk: t", -1, tmax, 1)
++        END IF
++
+       ELSE
+         ! Compute ratio
+         ratio = current_y / current_mu
+@@ -131,17 +132,21 @@ CONTAINS
+   !      IF (Cpsmall) THEN
+           tmaxL = 0.0_C_DOUBLE       ! Since Left bound can be zero
+           tmaxR = t_Start_Point * 2.0_C_DOUBLE
+-!  WRITE(*,*) "  BOUNDS 1: RTSAFE", tmaxL, tmaxR
+-          CALL improveKmaxSPBounds(t_Start_Point, tmaxL, tmaxR)
+-!  WRITE(*,*) "  BOUNDS 1 revises: RTSAFE", tmaxL, tmaxR
++
++          CALL improveKmaxSPBounds(t_Start_Point, tmaxL, tmaxR, error)
++
+           ! Crudely improve the bounds that bracket the starting point for finding Kmax.
+           CALL rtsafe(  evaluateImkdZero,   &
+                         tmaxL,              &
+                         tmaxR,              &
+                         aimrerr,            &
+                         tmax,               &
+-                        error)
+-          IF (error) CALL DBLEPR("ERROR: cannot solve", -1, tmax, 1)
++                        errorHere)
++          IF (errorHere) THEN
++            error = .TRUE.
++            IF (Cverbose) CALL DBLEPR("ERROR: rtsafe: tmax", -1, tmax, 1)
++          END IF
++
+       END IF  
+   
+       ! Find mmax, which depends on whether we are working with the PDF or the CDF.
+@@ -151,12 +156,16 @@ CONTAINS
+   
+       ! Find kmax from tmax
+       CALL evaluateImk(tmax, kmax, error)
+-      IF (error) CALL DBLEPR("ERROR: integrand zero =", -1, tmax, 1)
++      IF (errorHere) THEN
++        error = .TRUE.
++        IF (Cverbose) CALL DBLEPR("ERROR: Evaluating Imk: t", -1, tmax, 1)
++      END IF
++
+       ! Find mmax from kmax
+       IF (Cpdf) THEN
+-        mmax = FLOOR(2.0_C_DOUBLE * kmax / pi) - 1
++        mmax = FLOOR(2.0_C_DOUBLE * kmax / PI) - 1
+       ELSE
+-        mmax = FLOOR(kmax / pi)
++        mmax = FLOOR(kmax / PI)
+       END IF
+ 
+       ! Establish the first value of m to use, and whether the first zero is to the left of kmax
+@@ -183,11 +192,10 @@ CONTAINS
+       
+         IMPLICIT NONE
+     
+-        REAL(KIND=C_DOUBLE)     :: t0, pi
++        REAL(KIND=C_DOUBLE)     :: t0
+         REAL(KIND=C_DOUBLE)     :: ratio, r, t_small, t_large, c, angle
+       
+-        pi = 4.0_C_DOUBLE * DATAN(1.0_C_DOUBLE)
+-      
++
+         ! Weighting exponent for interpolation
+         r = 4.0E0_C_DOUBLE ! Artibtrary
+       
+@@ -207,7 +215,7 @@ CONTAINS
+         ENDIF
+       
+         ! --- Large-t approximation ---
+-        angle   = 0.5D0 * pi / (Cp - 1.0E0_C_DOUBLE)
++        angle   = 0.5D0 * PI / (Cp - 1.0E0_C_DOUBLE)
+         c       = DCOS(angle)**(Cp - 1.0E0_C_DOUBLE)
+        t_large = ( current_mu**(2.0_C_DOUBLE*(1.0_C_DOUBLE - Cp)) /   &
+                   ((1.0_C_DOUBLE - Cp) * current_phi) ) *             &
+@@ -219,7 +227,7 @@ CONTAINS
+       END FUNCTION tInitialGuess
+   
+       
+-      SUBROUTINE improveKmaxSPBounds(startTKmax, tmaxL, tmaxR)
++      SUBROUTINE improveKmaxSPBounds(startTKmax, tmaxL, tmaxR, error)
+         ! Crudely improve the bounds that bracket the starting point for finding Kmax.
+         ! Sometime a decent starting point is crucial for timely convergence.
+         USE ISO_C_BINDING, ONLY: C_INT, C_DOUBLE
+@@ -242,9 +250,19 @@ CONTAINS
+         boundL = tmaxL
+         boundR = tmaxR
+   
+-        CALL evaluateImkd(boundL, slopeL)
+-        CALL evaluateImk(boundL, Imk_value, error)
+-        IF (error) CALL DBLEPR("ERROR: integrand zero =", -1, boundL, 1)
++        CALL evaluateImkd(boundL, slopeL, errorHere)
++        IF (errorHere) THEN
++          error = .TRUE.
++          IF (Cverbose) CALL DBLEPR("ERROR: integrand zero =", -1, boundL, 1)
++          RETURN
++        END IF
++
++        CALL evaluateImk(boundL, Imk_value, errorHere)
++        IF (errorHere) THEN
++          error = .TRUE.
++          IF (Cverbose) CALL DBLEPR("ERROR: derivative zero =", -1, boundL, 1)
++          RETURN
++        END IF
+         
+         ! Slope at starting point should always be positive if we are here:
+         ! if the slope is negative, Im k(t) heads down and m = -1, -2, ...
+@@ -254,7 +272,7 @@ CONTAINS
+         DO WHILE (keep_Searching)
+           oldBoundL = boundL
+           boundL = (boundL + 1.0E-2_C_DOUBLE) * 1.250E0_C_DOUBLE
+-          CALL evaluateImkd(boundL, slopeL)
++          CALL evaluateImkd(boundL, slopeL, error)
+           CALL evaluateImk(boundL, Imk_value, error)
+           IF (error) CALL DBLEPR("ERROR: integrand zero =", -1, boundL, 1)
+   
+@@ -274,11 +292,21 @@ CONTAINS
+         IF (tmaxL .GT. boundR) boundR = tmaxL * 2.0_C_DOUBLE 
+         
+         ! Find the slope at boundR the starting point (SP)
+-        CALL evaluateImkd(boundR, slopeR)
++        CALL evaluateImkd(boundR, slopeR, errorHere)
++        IF (errorHere) THEN
++          error = .TRUE.
++          IF (Cverbose) CALL DBLEPR("ERROR: integrand zero =", -1, boundR, 1)
++          RETURN          
++        END IF
+         
+         ! Find the value if kmax at the starting point (SP)
+-        CALL evaluateImk(boundR, Imk_value, error)
+-        IF (error) CALL DBLEPR("ERROR: integrand zero =", -1, boundR, 1)
++        CALL evaluateImk(boundR, Imk_value, errorHere)
++        IF (errorHere) THEN
++          error = .TRUE.
++          IF (Cverbose) CALL DBLEPR("ERROR: integrand zero =", -1, boundR, 1)
++          RETURN          
++        END IF
++        
+   
+         ! A valid upper bound:
+         ! - must have a negative SLOPE (must be negative)i.e., heading down), *AND*
+@@ -296,10 +324,20 @@ CONTAINS
+             search_Its = search_Its + 1
+             boundR = (boundR + 0.1_C_DOUBLE) * 2.0E0_C_DOUBLE
+       
+-            CALL evaluateImkd(boundR, slopeR)
+-            CALL evaluateImk(boundR, Imk_value, error)
+-            IF (error) CALL DBLEPR("ERROR: integrand zero =", -1, boundR, 1)
+-  
++            CALL evaluateImkd(boundR, slopeR, errorHere)
++            IF (errorHere) THEN
++              error = .TRUE.
++              IF (Cverbose) CALL DBLEPR("ERROR: integrand zero =", -1, boundR, 1)
++              RETURN          
++            END IF
++
++            CALL evaluateImk(boundR, Imk_value, errorHere)
++            IF (errorHere) THEN
++              error = .TRUE.
++              IF (Cverbose) CALL DBLEPR("ERROR: integrand zero =", -1, boundR, 1)
++              RETURN          
++            END IF
++
+             IF ( (slopeR .LT. 0.0E0_C_DOUBLE ) .AND.  &
+                  (Imk_value .GT. 0.0_C_DOUBLE) ) THEN
+               ! - Found an upper bound where the slope is negative, and kmax is positive
+@@ -314,10 +352,21 @@ CONTAINS
+         DO WHILE (keep_Searching)
+           oldBoundR = boundR
+           boundR = boundR * 0.90E0_C_DOUBLE
+-          CALL evaluateImkd(boundR, slopeR)
+-          CALL evaluateImk(boundR, Imk_value, error)
+-          IF (error) CALL DBLEPR("ERROR: integrand zero =", -1, boundR, 1)
+-  
++          CALL evaluateImkd(boundR, slopeR, errorHere)
++          IF (errorHere) THEN
++            error = .TRUE.
++            IF (Cverbose) CALL DBLEPR("ERROR: integrand zero =", -1, boundR, 1)
++            RETURN          
++          END IF
++
++          CALL evaluateImk(boundR, Imk_value, errorHere)
++          IF (errorHere) THEN
++            error = .TRUE.
++            IF (Cverbose) CALL DBLEPR("ERROR: integrand zero =", -1, boundR, 1)
++            RETURN          
++          END IF
++
++
+           IF ( (slopeR .GT. 0.0E0_C_DOUBLE) .AND.   &
+                (Imk_value .GT. 0.0_C_DOUBLE) ) THEN
+             ! - Gone too far, so keep previous bound
+@@ -346,13 +395,13 @@ CONTAINS
+     IMPLICIT NONE
+     
+     REAL(KIND=C_DOUBLE)           :: tsmall, tlarge, abs1mp
+-    REAL(KIND=C_DOUBLE)           :: omegaInf, slope, pi
+-  
++    REAL(KIND=C_DOUBLE)           :: omegaInf, slope
++    LOGICAL(C_BOOL)               :: error
+ 
+     ! Initialize
+     abs1mp = ABS(1.0_C_DOUBLE - Cp)
+-    pi = 4.0_C_DOUBLE * DATAN(1.0_C_DOUBLE)
+-  
++    findKmaxSP = 0.0_C_DOUBLE
++    
+     ! We find a small-t approx, a large-t approx, and a combined approx.
+     ! The SP should be the FIRST of these whose slope is NEGATIVE
+   
+@@ -365,13 +414,14 @@ CONTAINS
+       findKmaxSP = tsmall
+     ELSE
+       ! This should be the CASE: p > 2, AND y < mu
+-      omegaInf = (pi / 2.0_C_DOUBLE) * &
++      omegaInf = (PI / 2.0_C_DOUBLE) * &
+                  (1.0_C_DOUBLE - Cp)/(2.0_C_DOUBLE*Cp - 1.0_C_DOUBLE)
+       tsmall = current_mu**(1.0_C_DOUBLE - Cp) / ( (1.0_C_DOUBLE - Cp)) * &
+                DTAN(omegaInf)
+       
+-      CALL evaluateImkd(tsmall, slope)
+-      
++      CALL evaluateImkd(tsmall, slope, error)
++      IF (error) RETURN
++    
+       IF (slope .LE. 0.0_C_DOUBLE) THEN
+         findKmaxSP = tsmall
+         RETURN
+@@ -382,7 +432,8 @@ CONTAINS
+     tlarge = (current_mu / current_y)**(Cp - 1.0_C_DOUBLE) * &
+               current_mu**(1.0_C_DOUBLE - Cp) / (current_phi * abs1mp)
+   
+-    CALL evaluateImkd(tlarge, slope)
++    CALL evaluateImkd(tlarge, slope, error)
++    IF (error) RETURN
+   
+     IF (slope .LE. 0.0_C_DOUBLE) THEN
+       findKmaxSP = tlarge
+@@ -397,7 +448,7 @@ CONTAINS
+   
+   
+   
+-  SUBROUTINE improveKZeroBounds(m, left_Of_Max, zeroMid, zeroL, zeroR)
++  SUBROUTINE improveKZeroBounds(m, left_Of_Max, zeroMid, zeroL, zeroR, error)
+     ! Improve the bounds that bracket the zero of Im k(t).
+     ! A decent starting point is sometimes crucial to timely convergence.
+     
+@@ -411,6 +462,7 @@ CONTAINS
+     INTEGER(C_INT), INTENT(IN)          :: m
+     REAL(KIND=C_DOUBLE), INTENT(INOUT)  :: zeroL, zeroR
+     LOGICAL(C_BOOL), INTENT(IN)         :: left_Of_Max
++    LOGICAL(C_BOOL), INTENT(INOUT)      :: error
+   
+     REAL(KIND=C_DOUBLE)     :: valueL, valueR, multiplier
+     REAL(KIND=C_DOUBLE)     :: df, valueMid
+@@ -439,10 +491,14 @@ CONTAINS
+   
+     ! FIND the function value of the starting point (SP)
+     zeroMid = (zeroL + zeroR) / 2.0_C_DOUBLE
+-    CALL evaluateImkM(zeroMid, valueMid, df, m)
+-    CALL evaluateImkM(zeroL, valueL, df, m)
+-    CALL evaluateImkM(zeroR, valueR, df, m)
+-  
++    CALL evaluateImkM(zeroMid, valueMid, df, m, error)
++    IF (error) RETURN
++    
++    CALL evaluateImkM(zeroL, valueL, df, m, error)
++    IF (error) RETURN    
++    
++    CALL evaluateImkM(zeroR, valueR, df, m, error)
++    IF (error) RETURN
+   
+     ! CHECK IF BOUNDS REALLY DO BOUND THE ZERO:
+     IF ( (valueL * valueR) .GE. 0.0_C_DOUBLE) THEN
+@@ -458,7 +514,7 @@ CONTAINS
+           ! We are on the LEFT of the maximum of Im k(t), but the L bound gives a +ive value.
+           ! So we need to go LEFT a little.
+           zeroL = (zeroL - 0.1_C_DOUBLE) * 0.95_C_DOUBLE
+-          CALL evaluateImkM(zeroL, valueL, df, m)
++          CALL evaluateImkM(zeroL, valueL, df, m, error)
+           
+           IF (its .GE. 100_C_INT) stopIterating = .TRUE.
+           IF( valueL .LE. 0.0_C_DOUBLE) stopIterating = .TRUE.
+@@ -474,18 +530,14 @@ CONTAINS
+           ! We are on the LEFT of the maximum of Im k(t), but the R bound gives a -ive value.
+           ! So we need to go RIGHT a little.
+           zeroR = (zeroR + 0.1_C_DOUBLE) * 1.05_C_DOUBLE
+-          CALL evaluateImkM(zeroR, valueR, df, m)
++          CALL evaluateImkM(zeroR, valueR, df, m, error)
+ 
+           IF (its .GE. 100_C_INT) stopIterating = .TRUE.
+           IF( valueR .GE. 0.0_C_DOUBLE) stopIterating = .TRUE.
+         END DO
+         
+       END IF
+-  
+-  
+-  
+-  
+-  
++
+       ! The solution depends on what side of the max we are.
+       ! If to the RIGHT of the max of Im k(t), zeroL should give a +ive value; zeroR a -ive value.
+       IF ( .NOT.(left_Of_Max) ) THEN
+@@ -493,7 +545,8 @@ CONTAINS
+           ! We are on the RIGHT of the maximum of Im k(t), but the L bound gives a -ive value.
+           ! So we need to go LEFT a little.
+           zeroL = (zeroL - 0.1_C_DOUBLE) * 0.95_C_DOUBLE
+-          CALL evaluateImkM(zeroL, valueL, df, m)
++          CALL evaluateImkM(zeroL, valueL, df, m, error)
++          IF (error) RETURN
+         END DO
+   
+   
+@@ -504,7 +557,8 @@ CONTAINS
+           ! We are on the RIGHT of the maximum of Im k(t), but the R bound gives a +ive value.
+           ! So we need to go RIGHT a little.
+           zeroR = (zeroR + 0.1_C_DOUBLE) * 1.05_C_DOUBLE
+-          CALL evaluateImkM(zeroR, valueR, df, m)
++          CALL evaluateImkM(zeroR, valueR, df, m, error)
++          IF (error) RETURN
+         END DO
+       END IF
+   
+@@ -524,10 +578,15 @@ CONTAINS
+         
+       ! And once more ONLY
+       zeroMid = (zeroL + zeroR) / 2.0_C_DOUBLE
+-      CALL evaluateImkM(zeroMid, valueMid, df, m)
+-      CALL evaluateImkM(zeroL, valueL, df, m)
+-      CALL evaluateImkM(zeroR, valueR, df, m)
+-  
++      CALL evaluateImkM(zeroMid, valueMid, df, m, error)
++      IF (error) RETURN
++    
++      CALL evaluateImkM(zeroL, valueL, df, m, error)
++      IF (error) RETURN
++      
++      CALL evaluateImkM(zeroR, valueR, df, m, error)
++      IF (error) RETURN
++    
+       ! Find a point halfway between bounds.
+       ! If the new point has same sign as L/R bound, make that the new L/R bounds.
+       IF ( (valueMid * valueL) .GE. 0.0_C_DOUBLE) THEN
+@@ -595,89 +654,118 @@ CONTAINS
+           left_Of_Max = .FALSE.
+         END IF
+       END IF
+-!WRITE(*,*) " - Moving m from ", mOld, 'to', m
++
+     END SUBROUTINE advanceM
+     
+     
+   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+     
+     
+-    SUBROUTINE findExactZeros(m, tL, tR, tStart, tZero, left_Of_Max) 
++    SUBROUTINE findExactZeros(m, tL, tR, tStart, tZero, left_Of_Max, error) 
+   ! Find the exact zeros of the integrand
+   
+-  USE tweedie_params_mod
+-  USE ISO_C_BINDING, ONLY: C_INT, C_DOUBLE, C_BOOL
+-  USE Calcs_Solvers
+-  USE Calcs_Imag
++    USE tweedie_params_mod
++    USE ISO_C_BINDING, ONLY: C_INT, C_DOUBLE, C_BOOL
++    USE Calcs_Solvers
++    USE Calcs_Imag
++    
++    IMPLICIT NONE
+   
+-  IMPLICIT NONE
+-
+-  INTEGER(C_INT), INTENT(IN)          :: m
+-  REAL(KIND=C_DOUBLE), INTENT(INOUT)  :: tL, tR, tStart
+-  REAL(KIND=C_DOUBLE), INTENT(OUT)    :: tZero
+-  LOGICAL(C_BOOL), INTENT(IN)         :: left_Of_Max
+-
+-  REAL(KIND=C_DOUBLE)   :: xacc, fL, fR, dfL, dfR, tstart_update, tMid
+-  LOGICAL(C_BOOL)       :: error
+-
+-  ! Sync the local value of  m  to the shared value.
+-  m_shared = m
+-  ! Set the accuracy
+-  xacc = 1.0E-11_C_DOUBLE
+-
+-  ! Find mmax, which depends on whether we are working with the PDF or the CDF.
+-  ! The PDF uses cos Im k(t) in the integrand; the CDF has sin Im k(t) in the integrand.
+-  ! Thus, the PDF has integrand zeros at Im k(t) = pi/2 + m * pi/y;
+-  !       the CDF has integrand zeros at Im k(t) =        m * pi/y.
+-  ! Ensure the bounds actually bound the zero
+-!WRITE(*,*)">>> IN findExactZeros: m, tL, tR", i, m, tL, tR
+-  CALL evaluateImkM(tL, fL, dfL, m)
+-!WRITE(*,*) "fL, dfL", fL, dfL
+-  CALL evaluateImkM(tR, fR, dfR, m)
+-!WRITE(*,*) "fR, dfR", fR, dfR
+-  IF ( (fL * fR) .GT. 0.0_C_DOUBLE ) THEN
+-    ! Then bounds do not bound the zero
+-     tMid = (tL + tR) / 2.0_C_DOUBLE
+- 
+-    CALL improveKZeroBounds(m, left_Of_Max, tMid, tL, tR)
+-    IF (Cverbose) CALL DBLEPR("Bounds do not bracket the zero (findExactZeros)", -1, fR, 1)
+-  END IF
+-  ! For robustness, use rtsafe when the  distance between zeros 
+-  ! is expected to be small (i.e., in the tail).
+-  IF ( m .LE. -3 ) THEN ! Use rtsafe whenever m is large and negative
+-    CALL rtsafe(evaluateImkM_wrapper, tL, tR, xacc, tZero, error)
+-    IF (error) CALL DBLEPR("ERROR: cannot solve", -1, tZero, 1)
+-  ELSE IF ( (Cpsmall) .AND. (current_y .LT. current_mu) ) THEN
+-    ! When small p and small y, fight harder for good starting bounds
+-    CALL improveKZeroBounds(m, left_Of_Max, tStart, tL, tR)
+-    CALL rtsafe(evaluateImkM_wrapper, tL, tR, xacc, tZero, error)
+-    IF (error) CALL DBLEPR("ERROR: cannot solve", -1, tZero, 1)
+-  ELSE
+-    ! Default to rtnewton for "easy" cases (e.g., initial zeros)
+-    tstart_update = (tL + tR) / 2.0_C_DOUBLE
+-!    CALL rtnewton(i, evaluateImkM_wrapper, tstart_update, xacc, tZero)
+-    CALL rtsafe(evaluateImkM_wrapper, tL, tR, xacc, tZero, error)
+-  END IF
+-  
+-
+-END SUBROUTINE findExactZeros
+-
+-
+-! Define the wrapper subroutine
+-SUBROUTINE evaluateImkM_wrapper(x, f, df)
+-  ! Evaluate  Im k(t) - m * pi (CDF) - pi/2  or  Im k(t) - m * pi (CDF)
+-  
+-  USE Calcs_Imag, ONLY: evaluateImkM  ! Explicitly tell the wrapper where to find the math
+-  IMPLICIT NONE
+-
+-  REAL(KIND=C_DOUBLE), INTENT(IN)   :: x
+-  REAL(KIND=C_DOUBLE), INTENT(OUT)  :: f, df
+-     
+-  CALL evaluateImkM(x, f, df, m_shared) ! Pass the captured 'm' value
+-
+-END SUBROUTINE evaluateImkM_wrapper
+-
++    INTEGER(C_INT), INTENT(IN)          :: m
++    REAL(KIND=C_DOUBLE), INTENT(INOUT)  :: tL, tR, tStart
++    REAL(KIND=C_DOUBLE), INTENT(OUT)    :: tZero
++    LOGICAL(C_BOOL), INTENT(IN)         :: left_Of_Max
++    LOGICAL(C_BOOL), INTENT(INOUT)      :: error
+   
++    REAL(KIND=C_DOUBLE)   :: xacc, fL, fR, dfL, dfR, tstart_update, tMid
++    LOGICAL(C_BOOL)       :: errorHere
++    
++    ! Sync the local value of  m  to the shared value.
++    m_shared = m
++    ! Set the accuracy
++    xacc = 1.0E-11_C_DOUBLE
++  
++    ! Find mmax, which depends on whether we are working with the PDF or the CDF.
++    ! The PDF uses cos Im k(t) in the integrand; the CDF has sin Im k(t) in the integrand.
++    ! Thus, the PDF has integrand zeros at Im k(t) = pi/2 + m * pi/y;
++    !       the CDF has integrand zeros at Im k(t) =        m * pi/y.
++    ! Ensure the bounds actually bound the zero
++  
++    CALL evaluateImkM(tL, fL, dfL, m, errorHere)
++    IF (errorHere) THEN
++      error = .TRUE.
++      RETURN
++    END IF
++    
++    CALL evaluateImkM(tR, fR, dfR, m, errorHere)
++    IF (errorHere) THEN
++      error = .TRUE.
++      RETURN
++    END IF
++  
++    IF ( (fL * fR) .GT. 0.0_C_DOUBLE ) THEN
++      ! Then bounds do not bound the zero
++       tMid = (tL + tR) / 2.0_C_DOUBLE
++   
++      CALL improveKZeroBounds(m, left_Of_Max, tMid, tL, tR, errorHere)
++      IF (errorHere) THEN
++        IF (Cverbose) CALL DBLEPR("Bounds do not bracket the zero (findExactZeros)", -1, fR, 1)
++         error = .TRUE.
++        RETURN
++      END IF
++    END IF
++    ! For robustness, use rtsafe when the  distance between zeros 
++    ! is expected to be small (i.e., in the tail).
++    IF ( m .LE. -3 ) THEN 
++    
++      CALL rtsafe(evaluateImkM_wrapper, tL, tR, xacc, tZero, errorHere)
++      IF (errorHere) THEN
++        error = .TRUE.
++        IF (Cverbose) CALL DBLEPR("ERROR: cannot solve", -1, tZero, 1)
++        RETURN
++      END IF  
++    ELSE IF ( (Cpsmall) .AND. (current_y .LT. current_mu) ) THEN
++    
++      ! When small p and small y, fight harder for good starting bounds
++      CALL improveKZeroBounds(m, left_Of_Max, tStart, tL, tR, error)
++      IF (error) THEN
++        IF (Cverbose) CALL DBLEPR("ERROR: cannot solve", -1, tZero, 1)
++        RETURN
++      END IF
++      CALL rtsafe(evaluateImkM_wrapper, tL, tR, xacc, tZero, error)
++      
++      IF (error) THEN
++        IF (Cverbose) CALL DBLEPR("ERROR: cannot solve", -1, tZero, 1)
++        RETURN
++      END IF
++    ELSE
++      ! Default to rtnewton for "easy" cases (e.g., initial zeros)
++      tstart_update = (tL + tR) / 2.0_C_DOUBLE
++  !    CALL rtnewton(i, evaluateImkM_wrapper, tstart_update, xacc, tZero)
++      CALL rtsafe(evaluateImkM_wrapper, tL, tR, xacc, tZero, error)
++      IF (error) RETURN
++    END IF
++    
++  
++  END SUBROUTINE findExactZeros
++  
++  
++  ! Define the wrapper subroutine
++  SUBROUTINE evaluateImkM_wrapper(x, f, df, error)
++    ! Evaluate  Im k(t) - m * pi (CDF) - pi/2  or  Im k(t) - m * pi (CDF)
++    
++    USE Calcs_Imag, ONLY: evaluateImkM  ! Explicitly tell the wrapper where to find the math
++    IMPLICIT NONE
++  
++    REAL(KIND=C_DOUBLE), INTENT(IN)   :: x
++    REAL(KIND=C_DOUBLE), INTENT(OUT)  :: f, df
++    LOGICAL(C_BOOL), INTENT(INOUT)    :: error
++       
++    CALL evaluateImkM(x, f, df, m_shared, error) ! Pass the captured 'm' value
++    IF (error) RETURN
++  
++  END SUBROUTINE evaluateImkM_wrapper
++
+   
+ END MODULE Calcs_K
+ 
+diff --git a/src/Calcs_Real.f90 b/src/Calcs_Real.f90
+index cdd763e..a5d88b6 100644
+--- a/src/Calcs_Real.f90
++++ b/src/Calcs_Real.f90
+@@ -10,32 +10,32 @@ MODULE Calcs_Real
+   
+ CONTAINS
+ 
+-  SUBROUTINE evaluateRek(t, Rek)
++  SUBROUTINE evaluateRek(t, Rek, errorHere)
+     ! Find the value of Re k(t)
+     
+     IMPLICIT NONE
+   
+-    REAL(KIND=C_DOUBLE), INTENT(IN)    :: t
+-    REAL(KIND=C_DOUBLE), INTENT(OUT)   :: Rek
+-  
+-    REAL(KIND=C_DOUBLE) :: pi, omega, pindex, front, alpha, tanArg
++    REAL(KIND=C_DOUBLE), INTENT(IN)     :: t
++    REAL(KIND=C_DOUBLE), INTENT(OUT)    :: Rek
++    LOGICAL(C_BOOL), INTENT(OUT)        :: errorHere    ! TRUE if any computational problem founds
++
++    REAL(KIND=C_DOUBLE) :: omega, pindex, front, alpha, tanArg
+   
+     
+-    pi = 4.0_C_DOUBLE * DATAN(1.0_C_DOUBLE)
++    errorHere = .FALSE.
++    Rek = 0.0E0_C_DOUBLE
++    
+     pindex = (2.0E0_C_DOUBLE - Cp)
+     front = current_mu ** pindex  / ( current_phi * pindex)
+     tanArg = (1.0E0_C_DOUBLE - Cp) * t * current_phi / (current_mu ** (1.0E0_C_DOUBLE - Cp) )
+     omega = DATAN( tanArg )
+-
++    
+     ! Safety check
+-    IF ((omega .GT. 0.0E0_C_DOUBLE ) .OR. (omega .LT. (-pi/2.0E0_C_DOUBLE))) THEN
+-       ! Error!
+-        ! CALL DBLEPR("ERROR (evaluateRek): Omega out of range:", -1, omega, 1)
+-        ! CALL DBLEPR("ERROR (evaluateRek): t:", -1, t, 1)
+-        ! CALL DBLEPR("         p:", -1, Cp, 1)
+-        ! CALL DBLEPR("        mu:", -1, current_mu, 1)
+-        ! CALL DBLEPR("       phi:", -1, current_phi, 1)
+-       RETURN
++    IF ((omega .GT. 0.0E0_C_DOUBLE ) .OR. (omega .LT. (-PI/2.0E0_C_DOUBLE))) THEN
++      ! Error!
++      errorHere = .TRUE.
++      IF (Cverbose) CALL DBLEPR("ERROR: Rek: omega out of bounds =", -1, omega, 1)
++      RETURN
+     END IF
+     
+     alpha = (2.0E0_C_DOUBLE - Cp)/(1.0E0_C_DOUBLE - Cp)
+@@ -45,22 +45,33 @@ CONTAINS
+ 
+ 
+ 
+-  SUBROUTINE evaluateRekd(t, Redk)
++  SUBROUTINE evaluateRekd(t, Rekd, errorHere)
+     ! Find the value of Re k'(t)
+     
+     IMPLICIT NONE
+   
+-    REAL(KIND=C_DOUBLE), INTENT(IN)    :: t
+-    REAL(KIND=C_DOUBLE), INTENT(OUT)   :: Redk
+-    
+-    REAL(KIND=C_DOUBLE)       :: omega, pindex
++    REAL(KIND=C_DOUBLE), INTENT(IN)   :: t
++    REAL(KIND=C_DOUBLE), INTENT(OUT)  :: Rekd
++    LOGICAL(C_BOOL), INTENT(OUT)      :: errorHere
++    REAL(KIND=C_DOUBLE)               :: omega, pindex
+ 
++    ! Initialise
++    errorHere = .FALSE.
++    Rekd = 0.0E0_C_DOUBLE
+     
+     pindex = 1.0E0_C_DOUBLE / (1.0E0_C_DOUBLE - Cp)
+     omega = DATAN( ( (1.0E0_C_DOUBLE - Cp) * t * current_phi) / &
+                    (current_mu ** (1.0E0_C_DOUBLE - Cp) ) )
+     
+-    Redk = current_mu * &
++    ! Safety check
++    IF ((omega .GT. 0.0E0_C_DOUBLE ) .OR. (omega .LT. (-PI/2.0E0_C_DOUBLE))) THEN
++      ! Error!
++      errorHere = .TRUE.
++      IF (Cverbose) CALL DBLEPR("ERROR: Rekd: omega out of bounds =", -1, omega, 1)
++      RETURN
++    END IF
++
++    Rekd = current_mu * &
+            DSIN( omega * pindex ) / &
+            (DCOS(omega)**pindex)
+     
+@@ -95,4 +106,4 @@ CONTAINS
+       
+       
+ 
+-END MODULE Calcs_Real
+\ No newline at end of file
++END MODULE Calcs_Real
+diff --git a/src/Calcs_Solvers.f90 b/src/Calcs_Solvers.f90
+index 3498991..1e052af 100644
+--- a/src/Calcs_Solvers.f90
++++ b/src/Calcs_Solvers.f90
+@@ -8,129 +8,26 @@ MODULE Calcs_Solvers
+   PRIVATE
+   
+   ! Make the public subroutines available to other files using the module
+-  PUBLIC :: rtnewton, rtsafe, funcd_signature
++  PUBLIC :: rtsafe, funcd_signature
+   
+   ! --- Interface Template ---
+   ! This defines the signature that rtnewton and rtsafe rely on.
+   INTERFACE
+-    SUBROUTINE funcd_signature(x, f, df)
+-      USE ISO_C_BINDING, ONLY: C_INT, C_DOUBLE
++    SUBROUTINE funcd_signature(x, f, df, error)
++      USE ISO_C_BINDING, ONLY: C_INT, C_DOUBLE, C_BOOL
++      
+       IMPLICIT NONE
++      
+       REAL(KIND=C_DOUBLE), INTENT(IN)     :: x
+       REAL(KIND=C_DOUBLE), INTENT(OUT)    :: f, df
++      LOGICAL(C_BOOL), INTENT(INOUT)      :: error
+     END SUBROUTINE funcd_signature
+   END INTERFACE
+ 
+ CONTAINS
+ 
+-  SUBROUTINE rtnewton(funcd, xstart, xacc, root)
+-    ! This function implements the Newton-Raphson method for finding a root
+-    ! of the function 'funcd' between bounds x1 and x2, starting at xstart.
+-    ! It includes a line-search safeguard to ensure x remains > 0.
+-    !
+-    ! funcd is a user-supplied subroutine which returns
+-    ! both the function value and the first derivative of the function.
+-    
+-    USE tweedie_params_mod, ONLY: Cverbose
+-    USE ISO_C_BINDING, ONLY: C_INT, C_DOUBLE
+-    
+-    IMPLICIT NONE
+-    
+-    REAL(KIND=C_DOUBLE), INTENT(IN)   :: xstart, xacc
+-    REAL(KIND=C_DOUBLE)               :: root
+-    
+-    INTEGER(C_INT), PARAMETER :: MAXITS = 100
+-    INTEGER(C_INT)            :: j
+-    REAL(KIND=C_DOUBLE)       :: dx, df, f, epsilon_f, epsilon_x, rel
+-    REAL(KIND=C_DOUBLE)       :: x_current, x_iter_old, factor, x_new
+-    
+-    PROCEDURE(funcd_signature):: funcd
+-    
+-    
+-    ! Iniyialise
+-    epsilon_x = xacc* 10.0_c_DOUBLE   ! For changes in value of the root
+-    epsilon_f = xacc                  ! For changes in the value of the root
+-    rel = xacc * 10.0_C_DOUBLE        ! For *relative* changes in the root
+-    
+-    ! Initialize starting guess
+-    x_current = xstart
+-    
+-    ! Check initial boundary condition
+-    IF (x_current .LE. 0.0_C_DOUBLE) THEN
+-      IF (Cverbose) CALL DBLEPR("ERROR (rtnewton): Initial guess is not positive:", -1, xstart, 1)
+-      root = HUGE(1.0_C_DOUBLE)
+-      RETURN
+-    END IF
+-    
+-    DO j = 1, MAXITS
+-      ! Save the old value, guaranteed to be > 0
+-      x_iter_old = x_current
+-      
+-      ! Calculate function value (f) and derivative (df) at the current safe point
+-      CALL funcd(x_current, f, df) 
+-      
+-      ! Newton-Raphson Step: dx = f/f'
+-      dx = f / df
+-
+-      ! Check for convergence:
+-      !  - check for convergence based on function value
+-      IF (ABS(f) .LT. epsilon_f) THEN
+-        EXIT ! Root found (f is close to zero)
+-      END IF
+-      
+-      ! Check for convergence:
+-      !  - check for convergence based on change in x-values
+-      IF ( ABS(dx) .LE. MAX(epsilon_x, rel * ABS(x_current)) ) THEN
+-        EXIT
+-      END IF
+-
+-      ! Initialize step fraction and compute new value
+-      factor = 1.0_C_DOUBLE
+-      x_new = x_iter_old - dx ! Full step proposal
+-      
+-      ! SAFEGUARD: 
+-      ! Step halving (line search) to ensure x_new > 0
+-      DO WHILE ( (x_new .LE. 0.0_C_DOUBLE) .AND.   &
+-                 (factor .GT. 1.0E-6_C_DOUBLE) )
+-        ! If it violates the boundary, halve the step size
+-        factor = factor / 2.0_C_DOUBLE
+-        ! Re-calculate step based on the last safe value (x_iter_old)
+-        x_new = x_iter_old - factor * dx
+-      END DO  
+-      
+-      ! Check for catastrophic failure near zero
+-      IF (x_new .LE. 0.0_C_DOUBLE) THEN
+-          IF (Cverbose) CALL DBLEPR("ERROR (rtnewton): Step halving failed to find positive root:", -1, x_new, 1)
+-          ! If we can't step forward even a tiny bit, assume the root is effectively 0 or failed.
+-        x_current = x_iter_old
+-        EXIT
+-      END IF
+-    
+-      ! Update the current root estimate with the safe step
+-      x_current = x_new
+-      
+-      ! Check for step convergence (step size is small)
+-      ! Use the difference between the new and old value for robustness.
+-      IF (ABS(x_current - x_iter_old) .LT. xacc) EXIT
+-    END DO
+-    
+-    ! If we get here, NO CONVERGENCE after MAXITS
+-    IF (j .GE. MAXITS) THEN
+-      IF (Cverbose) CALL INTPR( "ERROR (rtnewton): failed to convergence after iterations:", -1, MAXITS, 1)
+-      IF (Cverbose) CALL DBLEPR("  Function value is:", -1, f, 1)
+-      IF (Cverbose) CALL DBLEPR("  at x:", -1, x_current, 1)
+-      IF (Cverbose) CALL DBLEPR("  and slope is:", -1, df, 1)
+-    END IF
+-    
+-    ! Assign the final root value
+-    root = x_current
+-  
+-  END SUBROUTINE rtnewton
+-  
+-  
+   
+-  
+-  SUBROUTINE rtsafe(funcd, x1, x2, xacc, root, error)
++  SUBROUTINE rtsafe(funcd, x1, x2, xacc, root, errorHere)
+     ! Adapted from NUMERICAL RECIPES Sect. 9.4
+     ! Uses a combination of Newton-Raphson and bisection, find the root of a function bracketed
+     ! between x1 and x2. The root is refined until its accuracy is known within plus/minus xacc. 
+@@ -145,7 +42,7 @@ CONTAINS
+     
+     REAL(KIND=C_DOUBLE), INTENT(IN)   :: x1, x2, xacc
+     REAL(KIND=C_DOUBLE), INTENT(OUT)  :: root
+-    LOGICAL(C_BOOL), INTENT(OUT)      :: error
++    LOGICAL(C_BOOL), INTENT(OUT)      :: errorHere
+     
+     INTEGER(C_INT)                    :: MAXIT, j
+     REAL(KIND=C_DOUBLE)               :: df, dx, dxold, f, fh, fl, temp, xh, xl
+@@ -154,15 +51,25 @@ CONTAINS
+     
+     PROCEDURE(funcd_signature) :: funcd
+     
+-    error = .FALSE.
+-    call funcd(x1, fl, df)
+-    call funcd(x2, fh, df)
++    errorHere = .FALSE.
++    
++    CALL funcd(x1, fl, df, errorHere)
++    IF (errorHere) THEN
++      IF (Cverbose) CALL DBLEPR("ERROR: In rtsafe (x1)", -1, xl, 1)
++      RETURN
++    END IF
+     
++    CALL funcd(x2, fh, df, errorHere)
++    IF (errorHere) THEN
++      IF (Cverbose) CALL DBLEPR("ERROR: In rtsafe (x2)", -1, xl, 1)
++      RETURN
++    END IF
++
+     IF ( (fl .GT. 0.0_C_DOUBLE) .AND. (fh .GT. 0.0_C_DOUBLE) &  
+            .OR.                                                &
+            (fl .LT. 0.0_C_DOUBLE) .AND. (fh .LT. 0.0_C_DOUBLE) ) THEN
+       IF (Cverbose) CALL DBLEPR("ERROR (rtsafe): Root not bracketed: ", -1, x2, 1)
+-      error = .TRUE.
++      errorHere = .TRUE.
+       RETURN
+     END IF
+     
+@@ -184,7 +91,11 @@ CONTAINS
+     root = 0.5_C_DOUBLE * (x1 + x2)   ! Initialize the guess for root,
+     dxold = DABS(x2 - x1)             ! the “stepsize before last,”
+     dx = dxold                        ! and the last step.
+-    CALL funcd(root, f, df)
++    CALL funcd(root, f, df, errorHere)
++    IF (errorHere) THEN
++      IF (Cverbose) CALL DBLEPR("ERROR (rtsafe): Computing: ", -1, root, 1)
++      RETURN
++    END IF
+     
+     DO j = 1, MAXIT ! Loop over allowed iterations.
+       IF ( ( (root - xh) * df - f) * ( (root - xl) * df - f) .GT. 0.0_C_DOUBLE    & 
+@@ -206,7 +117,12 @@ CONTAINS
+       END IF
+       
+       IF (DABS(dx) .LT. xacc) RETURN  ! Convergence criterion.
+-      CALL funcd(root, f, df)      ! The one new function evaluation per iteration.
++      CALL funcd(root, f, df, errorHere)      ! The one new function evaluation per iteration.
++      IF (errorHere) THEN
++        IF (Cverbose) CALL DBLEPR("ERROR (rtsafe): Computing: ", -1, root, 1)
++        RETURN
++      END IF
++
+       IF (f .LT. 0.0_C_DOUBLE) THEN   ! Maintain the bracket on the root.
+         xl = root
+       ELSE
+@@ -214,11 +130,15 @@ CONTAINS
+       END IF
+     END DO
+     
++    ! If we get here, things have not converged
++    errorHere = .TRUE.
+     IF (j .GE. MAXIT) THEN
+-      IF (Cverbose) CALL INTPR( "ERROR (rtnewton): failed to convergence after iterations:", -1, MAXIT, 1)
+-      IF (Cverbose) CALL DBLEPR("  Function value is:", -1, f, 1)
+-      IF (Cverbose) CALL DBLEPR("  at t:", -1, root, 1)
+-      IF (Cverbose) CALL DBLEPR("  and slope is:", -1, df, 1)
++      IF (Cverbose) THEN
++        CALL INTPR( "ERROR (rtsafe): failed to convergence after iterations:", -1, MAXIT, 1)
++        CALL DBLEPR("  Function value is:", -1, f, 1)
++        CALL DBLEPR("  at t:", -1, root, 1)
++        CALL DBLEPR("  and slope is:", -1, df, 1)
++      END IF
+     END IF
+     
+     RETURN
+diff --git a/src/Integrands.f90 b/src/Integrands.f90
+index 37a693d..f8902c3 100644
+--- a/src/Integrands.f90
++++ b/src/Integrands.f90
+@@ -22,12 +22,17 @@ CONTAINS
+     REAL(KIND=C_DOUBLE), INTENT(IN)   :: t                ! The internal variable for integration
+ 
+     REAL(KIND=C_DOUBLE)               :: integrand_result ! The result of the function
++    LOGICAL(C_BOOL)                   :: errorHere
+      
+     
+     ! Grab the relevant scalar values for this iteration:
+     current_y    = Cy(i)
+     current_mu   = Cmu(i)
+-
++    
++    ! Initialise
++    integrand_result = 0.0_C_DOUBLE
++    Rek = 0.0_C_DOUBLE
++    Imk = 0.0_C_DOUBLE
+ 
+     ! Check for when t = 0 (t is very close to zero)
+     IF (ABS(t) .LT. 1.0E-14_C_DOUBLE) THEN
+@@ -37,10 +42,14 @@ CONTAINS
+   
+       RETURN
+     ELSE
+-      CALL evaluateRek(t, Rek)
+-      CALL evaluateImk(t, Imk, error)
+-      IF (error) CALL DBLEPR("ERROR: integrand zero =", -1, t, 1)
+-      
++      CALL evaluateRek(t, Rek, errorHere)
++      IF (errorHere) error = .TRUE.
++      IF (error) RETURN
++    
++      CALL evaluateImk(t, Imk, errorHere)
++      IF (errorHere) error = .TRUE.
++      IF (error) RETURN 
++
+       IF (Cpdf) THEN
+         IF (CpSmall) THEN
+           CALL evaluateLambda(lambda)
+diff --git a/src/TweedieIntHelpers.f90 b/src/TweedieIntHelpers.f90
+index 8db79bf..aae3af3 100644
+--- a/src/TweedieIntHelpers.f90
++++ b/src/TweedieIntHelpers.f90
+@@ -15,18 +15,20 @@ CONTAINS
+ !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+ 
+   SUBROUTINE checkStopPreAcc(tmax, zeroL, &
+-                             stop_PreAccelerate, converged_Pre)
++                             stop_PreAccelerate, converged_Pre, error)
+     ! Determine if it is OK to stop pre-accelerating, and start using acceleration
+     
+     IMPLICIT NONE
+   
+     REAL(KIND=C_DOUBLE), INTENT(IN) :: tmax
+     REAL(KIND=C_DOUBLE), INTENT(IN) :: zeroL
+-     LOGICAL(C_BOOL), INTENT(OUT)    :: stop_PreAccelerate, converged_Pre
+-    
++    LOGICAL(C_BOOL), INTENT(OUT)    :: stop_PreAccelerate, converged_Pre
++    LOGICAL(C_BOOL), INTENT(INOUT)  :: error
++
+     ! Local vars
+     INTEGER(C_INT)        :: nmax
+-    REAL(KIND=C_DOUBLE)   :: MM, Rek, Rekd, tstop, pi
++    REAL(KIND=C_DOUBLE)   :: MM, Rek, Rekd, tstop
++    LOGICAL(C_BOOL)       :: errorHere
+     
+     ! NOTE: 
+     ! If  stop_PreAccelerate  is  .TRUE.  it means to stop pre-accelerating
+@@ -42,9 +44,6 @@ CONTAINS
+     ! - things are so well behaved that we can go straight to acceleration (stop_PreAccelerate is 
+     !    .TRUE.  but  converged_Pre  is still  .FALSE.)
+     
+-    
+-    pi = 4.0_C_DOUBLE * DATAN(1.0_C_DOUBLE)
+-    
+ 
+     ! Initialise
+     stop_PreAccelerate = .FALSE.
+@@ -82,7 +81,7 @@ CONTAINS
+               nmax = FLOOR(MM)
+            END IF
+            tstop = current_mu**(1.0_C_DOUBLE - Cp) / ((1.0_C_DOUBLE - Cp) * current_phi) *   & 
+-                   DTAN( DBLE(nmax) * pi * (1.0_C_DOUBLE - Cp) )
++                   DTAN( DBLE(nmax) * PI * (1.0_C_DOUBLE - Cp) )
+            IF (zeroL .GT. tstop) stop_PreAccelerate = .TRUE.
+         END IF
+       END IF
+@@ -90,18 +89,25 @@ CONTAINS
+     
+     ! Sometimes this takes forever to flag  stop_PreAccelerate  as .TRUE.
+     ! so also check if exp{Re k(t)/t} is very small
+-    CALL evaluateRek( zeroL, Rek)
+-    CALL evaluateRekd(zeroL, Rekd)
++    CALL evaluateRek( zeroL, Rek, errorHere)
++    IF (errorHere) THEN
++      error = .TRUE.
++      IF (Cverbose) CALL DBLEPR("ERROR: cSPreAcc: Rek not found at", -1, zeroL, 1)
++      RETURN
++    END IF
++
++    CALL evaluateRekd(zeroL, Rekd, errorHere)
++    IF (errorHere) THEN
++      error = .TRUE.
++      IF (Cverbose) CALL DBLEPR("ERROR: cSPreAcc: Rekd not found at", -1, zeroL, 1)
++      RETURN
++    END IF
+     
+     IF (zeroL .GT. 0.0_C_DOUBLE) THEN
+       IF ( ( (DEXP(Rek)/zeroL) .LT. 1.0E-07_C_DOUBLE) .AND.          & 
+           (Rekd .LT. 0.0_C_DOUBLE) ) then
+         stop_PreAccelerate = .TRUE.
+         converged_Pre = .TRUE.
+-        
+-        IF (Cverbose) THEN 
+-          ! CALL DBLEPR("checkStopPreAcc: Pre-accelerating stopping (a). Rek(t) small:", -1, (DEXP(Rek)/zeroL), 1)
+-        END IF
+       END IF
+     END IF
+ 
+@@ -109,10 +115,6 @@ CONTAINS
+       IF ( ( (DEXP(Rek)/zeroL) .LT. 1.0E-15_C_DOUBLE)  ) THEN
+         stop_PreAccelerate = .TRUE.
+         converged_Pre = .TRUE.
+-
+-        IF (Cverbose) THEN 
+-          ! CALL DBLEPR("checkStopPreAcc: Pre-accelerating stopping (b). Rek(t) small:", -1, (DEXP(Rek)/zeroL), 1)
+-        END IF
+       END IF
+     END IF
+     
+@@ -124,7 +126,7 @@ CONTAINS
+ !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+ 
+   SUBROUTINE updateTM(i, tmax, mmax, left_Of_Max, &
+-                      m, zeroL, zeroR)
++                      m, zeroL, zeroR, error)
+                   
+     ! Update the values of  t  and  m  to the values needed
+     ! for the next integration region.
+@@ -138,17 +140,14 @@ CONTAINS
+     REAL(KIND=C_DOUBLE), INTENT(OUT)    :: zeroL
+     INTEGER(C_INT), INTENT(IN)          :: i, mmax
+     INTEGER(C_INT), INTENT(INOUT)       :: m
+-    LOGICAL(C_BOOL), INTENT(INOUT)      :: left_Of_Max
++    LOGICAL(C_BOOL), INTENT(INOUT)      :: left_Of_Max, error
+     
+     ! Local vars
+     INTEGER(C_INT)        :: mOld
+-    REAL(KIND=C_DOUBLE)   :: pi
+     REAL(KIND=C_DOUBLE)   :: zeroBoundL, zeroBoundR, zeroStartPoint
+     REAL(KIND=C_DOUBLE)   :: current_y, current_mu, current_phi
+ 
+     
+-    pi = 4.0_C_DOUBLE * DATAN(1.0_C_DOUBLE)
+-    
+     ! Grab the relevant scalar values for this iteration:
+     current_y    = Cy(i)
+     current_mu   = Cmu(i)
+@@ -190,12 +189,12 @@ CONTAINS
+ 
+     ! Improve the starting point (sometimes very useful):
+     CALL improveKZeroBounds(m, left_Of_Max, zeroStartPoint, &
+-                            zeroBoundL, zeroBoundR)
++                            zeroBoundL, zeroBoundR, error)
+     zeroStartPoint = (zeroBoundL + zeroBoundR)/2.0_C_DOUBLE
+ 
+     ! Now find the zero, within the bounds, with this starting point
+     CALL findExactZeros(m, zeroBoundL, zeroBoundR, &
+-                        zeroStartPoint, zeroR, left_Of_Max)
++                        zeroStartPoint, zeroR, left_Of_Max, error)
+     ! The zero just found  (zeroR)  is the right-side zero
+ 
+ 
+@@ -208,7 +207,7 @@ CONTAINS
+   
+   
+   SUBROUTINE findInitialZeroR(mfirst, left_Of_Max, tmax, &
+-                              zeroR)
++                              zeroR, error)
+   
+     USE tweedie_params_mod
+     
+@@ -218,29 +217,27 @@ CONTAINS
+     INTEGER(C_INT), INTENT(IN)          :: mfirst
+     LOGICAL(C_BOOL), INTENT(INOUT)      :: left_Of_Max
+     REAL(KIND=C_DOUBLE), INTENT(IN)     :: tmax
++    LOGICAL(C_BOOL), INTENT(INOUT)      :: error
+ 
+     ! Local vars
+     REAL(KIND=C_DOUBLE)                 :: t_Start_Point, zeroBoundL, zeroBoundR
+-    REAL(KIND=C_DOUBLE)                 :: pi, TMP
+-    LOGICAL(C_BOOL)                     :: error
+-
+-
+-    pi = 4.0_C_DOUBLE * DATAN(1.0_C_DOUBLE)
+-
++    REAL(KIND=C_DOUBLE)                 :: TMP
++    LOGICAL(C_BOOL)                     :: errorHere
+ 
+     ! Initialisation
+     t_Start_Point = 0.0_C_DOUBLE
+     zeroBoundL = 0.0_C_DOUBLE
+     zeroBoundR = 0.0_C_DOUBLE
+-
++    zeroR = 0.0_C_DOUBLE
++    
+     ! Find starting point for the first zero
+     IF (left_Of_Max) THEN
+-      t_Start_Point = pi / current_y  
++      t_Start_Point = PI / current_y  
+       zeroBoundL = 0_C_DOUBLE
+       zeroBoundR = tmax   ! WAS: t_Start_Point * 2.0_C_DOUBLE
+     ELSE
+       ! Searching to the right of tmax
+-      t_Start_Point = tmax + pi / current_y  
++      t_Start_Point = tmax + PI / current_y  
+       zeroBoundL = tmax
+       zeroBoundR = t_Start_Point * 2.0_C_DOUBLE
+     END IF
+@@ -250,12 +247,16 @@ CONTAINS
+     END IF
+   
+     ! Find the zero
+-    CALL findExactZeros(mfirst, zeroBoundL, zeroBoundR, t_Start_Point, zeroR, left_Of_Max)
++    CALL findExactZeros(mfirst, zeroBoundL, zeroBoundR, t_Start_Point, zeroR, & 
++                        left_Of_Max, error)
+     ! findExactZeros may change the value of  left_Of_Max
+ 
+-    CALL evaluateImk(zeroR, TMP, error)
+-    IF (error) CALL DBLEPR("ERROR: integrand zero =", -1, zeroR, 1)
+-
++    CALL evaluateImk(zeroR, TMP, errorHere)
++    IF (errorHere) THEN
++      error = .TRUE.
++      IF (Cverbose) CALL DBLEPR("ERROR: Imk: integrand zero =", -1, zeroR, 1)
++    END IF
++    
+   END SUBROUTINE findInitialZeroR
+ 
+ END MODULE TweedieIntHelpers
+diff --git a/src/TweedieIntegration.f90 b/src/TweedieIntegration.f90
+index 92de38f..51b6169 100644
+--- a/src/TweedieIntegration.f90
++++ b/src/TweedieIntegration.f90
+@@ -21,16 +21,16 @@ SUBROUTINE TweedieIntegration(i, funvalueI, exitstatus, relerr, count_Integratio
+   INTEGER(C_INT), INTENT(OUT)       :: count_Integration_Regions ! Num int regions
+ 
+   ! Local Variables: All local variables defined here
++  LOGICAL(C_BOOL)       :: error          ! TRUE if any computational problem founds
+   INTEGER(C_INT)        :: mmax, mfirst, mOld, accMax
+   INTEGER(C_INT)        :: m, min_Acc_Regions
+   LOGICAL(C_BOOL)       :: convergence_Acc
+   REAL(KIND=C_DOUBLE)   :: kmax, tmax, aimrerr
+-  REAL(KIND=C_DOUBLE)   :: epsilon, areaT, pi, West, Wold, Wold2
++  REAL(KIND=C_DOUBLE)   :: epsilon, areaT, West, Wold, Wold2
+   REAL(KIND=C_DOUBLE)   :: zeroL, zeroR
+   REAL(KIND=C_DOUBLE), ALLOCATABLE   :: Mmatrix(:, :), Nmatrix(:, :), xvec(:), wvec(:)
+   REAL(KIND=C_DOUBLE)   :: zeroStartPoint
+-  LOGICAL(C_BOOL)       :: left_Of_Max
+-  LOGICAL(C_BOOL)       :: flip_To_Other_Side
++  LOGICAL(C_BOOL)       :: left_Of_Max, flip_To_Other_Side
+   
+   INTEGER, PARAMETER :: MAX_ACC = 200
+   INTEGER, PARAMETER :: VEC_SIZE = MAX_ACC + 2
+@@ -64,7 +64,7 @@ SUBROUTINE TweedieIntegration(i, funvalueI, exitstatus, relerr, count_Integratio
+     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+     
+     SUBROUTINE accelerate(xvec, wvec, nzeros, Mmatrix, NMatrix, West)
+-      USE ISO_C_BINDING, ONLY: C_INT, C_DOUBLE
++      USE ISO_C_BINDING, ONLY: C_INT, C_DOUBLE, C_BOOL
+       IMPORT :: VEC_SIZE  ! Bring the parameter into the interface scope
+       INTEGER(C_INT), INTENT(IN)          :: nzeros
+       REAL(KIND=C_DOUBLE), INTENT(INOUT)  :: xvec(VEC_SIZE), wvec(VEC_SIZE)
+@@ -81,23 +81,18 @@ SUBROUTINE TweedieIntegration(i, funvalueI, exitstatus, relerr, count_Integratio
+   current_mu   = Cmu(i)   ! Access mu value for index i
+   current_phi  = Cphi(i)  ! Access phi value for index i
+   
++  ! Begin assuming no errors, and set to  .TRUE.  if any errors found.
++  error = .FALSE.
++  
+   ! ALLOCATE these arrays onto the HEAP
+   ALLOCATE(Mmatrix(2, VEC_SIZE))
+   ALLOCATE(Nmatrix(2, VEC_SIZE))
+   ALLOCATE(xvec(VEC_SIZE))
+   ALLOCATE(wvec(VEC_SIZE))
+   
+-  IF ( Cverbose ) THEN
+-    ! Report the current values for this evaluation
+-    ! CALL DBLEPR("*** Computing for p =", -1, Cp, 1)
+-    ! CALL DBLEPR("*** Computing for y =", -1, current_y, 1)
+-    ! CALL DBLEPR("*** Computing for mu =", -1, current_mu, 1)
+-    ! CALL DBLEPR("*** Computing for phi =", -1, current_phi, 1)
+-  END IF
+ 
+ 
+   ! --- Initialization ---
+-  pi = 4.0_C_DOUBLE * DATAN(1.0_C_DOUBLE)
+   aimrerr = 1.0E-12_C_DOUBLE
+   mOld = 0
+   m = 0
+@@ -146,7 +141,7 @@ SUBROUTINE TweedieIntegration(i, funvalueI, exitstatus, relerr, count_Integratio
+ 
+ 
+   ! FIND THE VALUES OF  kmax, tmax, mmax
+-  CALL findKmax(i, kmax, tmax, mmax, mfirst, left_Of_Max)
++  CALL findKmax(i, kmax, tmax, mmax, mfirst, left_Of_Max, error)
+   m = mfirst
+   
+   ! INTEGRATION
+@@ -174,13 +169,13 @@ SUBROUTINE TweedieIntegration(i, funvalueI, exitstatus, relerr, count_Integratio
+   
+   ! Find the value of  zeroR  for the initial region (zeroL is always 0.0)
+   CALL findInitialZeroR(mfirst, left_Of_Max, tmax, &
+-                        zeroR)
++                        zeroR, error)
+   ! Integrate:
+   CALL GaussQuadrature(i, zeroL, zeroR, area0)   ! area0  is the area of the initial region
+ 
+   ! Update
+   CALL updateTM( i, tmax, mmax, left_Of_Max, &
+-                 m, zeroL, zeroR)
++                 m, zeroL, zeroR, error)
+ 
+ 
+   ! ----------------------------------------------------------------------------
+@@ -204,19 +199,12 @@ SUBROUTINE TweedieIntegration(i, funvalueI, exitstatus, relerr, count_Integratio
+     CALL GaussQuadrature(i, zeroL, zeroR, sumA)
+     area1 = area1 + sumA
+ 
+-    IF ( Cverbose ) THEN    
+-      ! -------- Pre-acceleration zone sub-regions
+-      ! CALL DBLEPR(" Pre-acc subregion:", -1, area1, 1)
+-      ! CALL DBLEPR("      between:", -1, zeroL, 1)
+-      ! CALL DBLEPR("          and:", -1, zeroR, 1)
+-    END IF
+-
+     ! Update (zeroL, zeroR and m)
+     CALL updateTM( i, tmax, mmax, left_Of_Max, &
+-                   m, zeroL, zeroR)
++                   m, zeroL, zeroR, error)
+ 
+     ! Check for convergence
+-    CALL checkStopPreAcc(tmax, zeroR, stop_PreAccelerate, converged_Pre)
++    CALL checkStopPreAcc(tmax, zeroR, stop_PreAccelerate, converged_Pre, error)
+     IF (count_Acc_Regions .GT. accMax) THEN
+       stop_PreAccelerate = .TRUE.
+       converged_Pre      = .FALSE.
+@@ -260,7 +248,7 @@ SUBROUTINE TweedieIntegration(i, funvalueI, exitstatus, relerr, count_Integratio
+ 
+       ! Update (zeroL, zeroR and m)
+       CALL updateTM( i, tmax, mmax, left_Of_Max, &
+-                     m, zeroL, zeroR)
++                     m, zeroL, zeroR, error)
+ 
+       ! Check for convergence
+       relerr = ( DABS(West - Wold) + DABS(West - Wold2)) / (DABS(West) + epsilon)
+@@ -292,53 +280,55 @@ SUBROUTINE TweedieIntegration(i, funvalueI, exitstatus, relerr, count_Integratio
+ 
+   ! We have the value of the integral in the PDF/CDF calculation, so now work out the actual PDF/CDF
+   IF ( Cpdf ) THEN
+-    funvalueI = areaT/pi 
++    funvalueI = areaT/PI 
+   ELSE
+-    funvalueI =  0.5_C_DOUBLE - areaT/pi
+-  END IF  
++    funvalueI =  0.5_C_DOUBLE - areaT/PI
++  END IF
++  
++  IF (error) exitstatus = 0_C_INT
+   
+   
+   ! Print things if requested
+   IF ( Cverbose ) THEN
+     ! -------- Preparatory
+-    ! CALL DBLEPR("  -            kmax:", -1, kmax, 1 )
+-    ! CALL DBLEPR("  -            tmax:", -1, tmax, 1 )
+-    ! CALL INTPR( "  -            mmax:", -1, mmax, 1 )
+-    ! CALL INTPR( "  - first zero at m:", -1, mfirst, 1 )
++    CALL DBLEPR("  -            kmax:", -1, kmax, 1 )
++    CALL DBLEPR("  -            tmax:", -1, tmax, 1 )
++    CALL INTPR( "  -            mmax:", -1, mmax, 1 )
++    CALL INTPR( "  - first zero at m:", -1, mfirst, 1 )
+ 
+     ! -------- Initial zone
+-    ! CALL DBLEPR("Initial region area:", -1, area0, 1)
+-    ! CALL DBLEPR("      between 0 and:", -1, zeroR, 1)
+-    ! CALL INTPR( "      using right m:", -1, m, 1)
+-    ! CALL INTPR( " # pre-acc regions: ", -1, count_PreAcc_Regions, 1)
++    CALL DBLEPR("Initial region area:", -1, area0, 1)
++    CALL DBLEPR("      between 0 and:", -1, zeroR, 1)
++    CALL INTPR( "      using right m:", -1, m, 1)
++    CALL INTPR( " # pre-acc regions: ", -1, count_PreAcc_Regions, 1)
+ 
+     ! -------- Pre-acceleration zone
+-    ! CALL DBLEPR("       Pre-acc AREA:", -1, area1, 1)
+-    ! CALL DBLEPR("            between:", -1, leftPreAccZero, 1)
+-    ! CALL DBLEPR("                and:", -1, zeroR, 1)
+-    ! CALL INTPR( "      using right m:", -1, m,     1)
+-    ! CALL INTPR( "     # acc regions: ", -1, count_Acc_Regions, 1)
++    CALL DBLEPR("       Pre-acc AREA:", -1, area1, 1)
++    CALL DBLEPR("            between:", -1, leftPreAccZero, 1)
++    CALL DBLEPR("                and:", -1, zeroR, 1)
++    CALL INTPR( "      using right m:", -1, m,     1)
++    CALL INTPR( "     # acc regions: ", -1, count_Acc_Regions, 1)
+ 
+     ! -------- Acceleration zone
+     IF (converged_Pre) THEN
+-      ! CALL DBLEPR(" Accelerating not needed; convergence by t =", -1, zeroR, 1)
++      CALL DBLEPR(" Accelerating not needed; convergence by t =", -1, zeroR, 1)
+     ELSE
+-      ! CALL DBLEPR(" Accelerating starting after t =", -1, zeroR, 1)
+-      ! CALL DBLEPR("         Acc area:", -1, areaA, 1)
+-      ! CALL DBLEPR("          between:", -1, leftAccZero, 1)
+-      ! CALL DBLEPR("              and:", -1, zeroR, 1)
+-      ! CALL INTPR( "         up to m:", -1, m,     1)
++      CALL DBLEPR(" Accelerating starting after t =", -1, zeroR, 1)
++      CALL DBLEPR("         Acc area:", -1, areaA, 1)
++      CALL DBLEPR("          between:", -1, leftAccZero, 1)
++      CALL DBLEPR("              and:", -1, zeroR, 1)
++      CALL INTPR( "         up to m:", -1, m,     1)
+     END IF
+     
+     ! -------- Summary
+-    ! CALL DBLEPR("*** Initial area0: ", -1, area0, 1)
+-    ! CALL DBLEPR("*** Pre-acc area1: ", -1, area1, 1)
+-    ! CALL DBLEPR("***     Acc area!: ", -1, areaA, 1)
+-    ! CALL DBLEPR("***         TOTAL: ", -1, areaT, 1)
+-    ! CALL INTPR( "   over regions: ", -1, count_Integration_Regions, 1)
++    CALL DBLEPR("*** Initial area0: ", -1, area0, 1)
++    CALL DBLEPR("*** Pre-acc area1: ", -1, area1, 1)
++    CALL DBLEPR("***     Acc area!: ", -1, areaA, 1)
++    CALL DBLEPR("***         TOTAL: ", -1, areaT, 1)
++    CALL INTPR( "   over regions: ", -1, count_Integration_Regions, 1)
+     
+     ! -------- Results
+-    ! CALL DBLEPR("***    Fun. value:", -1, funvalueI, 1)
++    CALL DBLEPR("***    Fun. value:", -1, funvalueI, 1)
+ 
+   END IF
+ 
+diff --git a/src/accelerate.f90 b/src/accelerate.f90
+index c91ad23..fb172b1 100644
+--- a/src/accelerate.f90
++++ b/src/accelerate.f90
+@@ -1,7 +1,8 @@
++
+ SUBROUTINE accelerate(xvec, wvec, nzeros, Mmatrix, Nmatrix, West)
+   ! Accelerate the convergence of the infinite integral., the tail area
+   
+-  USE ISO_C_BINDING, ONLY: C_INT, C_DOUBLE
++  USE ISO_C_BINDING, ONLY: C_INT, C_DOUBLE, C_BOOL
+   
+   IMPLICIT NONE
+   
+diff --git a/src/findAccelStart.f90 b/src/findAccelStart.f90
+index 4e99294..c6728fc 100644
+--- a/src/findAccelStart.f90
++++ b/src/findAccelStart.f90
+@@ -9,27 +9,25 @@ SUBROUTINE findAccelStart(tmax, tStartAcc)
+   REAL(KIND=C_DOUBLE), INTENT(IN)   :: tmax     
+   REAL(KIND=C_DOUBLE), INTENT(OUT)  :: tStartAcc     ! The output starting point for acceleration
+ 
+-  REAL(KIND=C_DOUBLE)               :: pi, t_nmax
++  REAL(KIND=C_DOUBLE)               :: t_nmax
+   INTEGER(C_INT)                    :: n_max
+ 
+ 
+-  pi = 4.0_C_DOUBLE * DATAN(1.0_C_DOUBLE)
+-  
+   ! Start acceleration once the largest t of the region to integrate
+   ! (a) exceeds tmax;
+   ! (b) exceeds the final TP (inflection?) of Im k(t); AND
+   ! (c) exceeds the final TP (inflection?) of Re k(t).
+   !
+-  ! The number of infltecions points of Im k(t) is the same, or one larger, tha for Re k(t).
+-  ! So find the vale of t correspinding toi the number of inflections in Im k(t) only,
++  ! The number of inflections points of Im k(t) is the same, or one larger, than for Re k(t).
++  ! So find the value of t corresponding to the number of inflections in Im k(t) only,
+   ! and tRightMost is the maximum of t_max and this inflection value.
+ 
+   ! Check the Im k(t) criterion
+   n_max = FLOOR( Cp / (2.0_C_DOUBLE * (Cp - 1.0_C_DOUBLE) ) ) ! The maximum number of TPs
+   t_nmax = current_mu ** (1.0_C_DOUBLE - Cp) / ( current_phi * (1.0_C_DOUBLE - Cp)) *  &
+-           DTAN( 1.0_C_DOUBLE - Cp * n_max * pi / Cp )
++           DTAN( 1.0_C_DOUBLE - Cp * n_max * PI / Cp )
+   ! This is the value of t corresponding to the largest inflection point in Im k(t),
+-  ! which is never smaller than the largest inflection pint of Re k(t).
++  ! which is never smaller than the largest inflection point of Re k(t).
+   
+   tStartAcc = MAX(tmax, t_nmax)
+ 
+diff --git a/tests/testthat/test-other.R b/tests/testthat/test-other.R
+index 2f2428d..c93ddf8 100644
+--- a/tests/testthat/test-other.R
++++ b/tests/testthat/test-other.R
+@@ -30,6 +30,14 @@ test_that("Other functions work OK", {
+              phi = c(0.25, 0.5, 1) )
+   })
+ 
++  test_that("dtweedie power=1 returns 0 and warns", {
++    expect_warning(
++      val <- tweedie::dtweedie(1, mu = 2, phi = 2, power = 1),
++      regexp = "non-integer x"
++    )
++    expect_equal(val, 0)
++  })
++  
+ 
+   # qtweedie
+   expect_no_error({
+diff --git a/vignettes/references.bib b/vignettes/references.bib
+index 0245d17..017b9ab 100644
+--- a/vignettes/references.bib
++++ b/vignettes/references.bib
+@@ -51,3 +51,13 @@
+   number = {4},
+   pages = {267--280}
+ }
++
++
++@Manual{dunnGLMsData,
++  title = {GLMsData: Generalized Linear Model Data Sets},
++  author = {Peter K. Dunn and Gordon K. Smyth},
++  year = {2022},
++  note = {R package version 1.4},
++  url = {https://CRAN.R-project.org/package=GLMsData},
++  doi = {10.32614/CRAN.package.GLMsData},
++}
+diff --git a/vignettes/tweedie.Rmd b/vignettes/tweedie.Rmd
+index d695d41..8ef7522 100644
+--- a/vignettes/tweedie.Rmd
++++ b/vignettes/tweedie.Rmd
+@@ -45,7 +45,7 @@ For $1 < \xi < 2$, Tweedie distributions can be represented as a Poisson sum of
+ These distributions are continuous for $Y > 0$ but have a discrete mass at $Y = 0$.
+ 
+ 
+-## Examples
++## Use cases
+ 
+ Likelihood computations are not need to fit a Tweedie generalized linear model, using the `tweedie()` family from the [**statmod** package](https://CRAN.R-project.org/package=statmod) (@smythStatmodStatisticalModeling2025, @dunnGeneralizedLinearModels2018):
+ 
+@@ -157,7 +157,7 @@ qqline(qr,
+ The quantile residuals suggest the model may not be adequate.
+ 
+ 
+-# Estimating $\xi$
++### Estimating $\xi$
+ 
+ To use a Tweedie distribution in a glm, the value of $\xi$ is needed.
+ To find the most suitable value of $\xi$, **tweedie_profile()** can be used [@dunnGeneralizedLinearModels2018]:
+@@ -172,4 +172,76 @@ out$xi.max
+ ```
+ 
+ 
+-# References
++## Example
++
++Consider the `poison` data in the `GLMsData` package [@dunnGLMsData], which records the survival times of animals under various treatments and poisons (used in @dunnGeneralizedLinearModels2018, Sect. 12.4.2). 
++For convenience, a copy is included with this package:
++
++```{r PSNLoad}
++poison <- read.csv(system.file("extdata", "poison.csv", package = "tweedie"))
++
++# Convert to factors:
++poison$Psn <- factor(poison$Psn)
++poison$Trmt <- factor(poison$Trmt)
++
++head(poison)
++```
++
++The survival time is likely related to the poison type and type of treatment:
++
++```{r PSNPlotPsn}
++plot(Time ~ Psn,
++     data = poison,
++     xlab = "Poison type",
++     ylab = "Survival time (tens of hours)",
++     las = 1)
++```
++```{r PSNPlotTmt}
++plot(Time ~ Trmt,
++     data = poison,
++     xlab = "Treatment type",
++     ylab = "Survival time (tens of hours)",
++     las = 1)
++```
++
++In both cases, the variance of the survival times seems to increase with the mean survival time.
++Perhaps a Tweedie glm would be appropriate.
++To fit a Tweedie glm, the value of $\xi$ is needed; since no exact zeros are present (or possible) for the survival times, very likely $\xi \ge 2$:
++
++
++```{r PSNProfile}
++PSNPrf <- tweedie_profile(Time ~ Trmt + Psn, data = poison, 
++                          do.plot = TRUE, xi.vec = seq(2.5, 5.5, length = 11) )
++```
++
++Then, $\xi\approx 4$:
++
++```{r PSNXi}
++PSNPrf$xi.max
++```
++
++
++So then the Tweedie glm can be fitted:
++
++```{r PSNModel}
++PSNMod <- glm(Time ~ Trmt + Psn, 
++              data = poison,
++              family=statmod::tweedie(var = 4, link.power = 0))
++anova(PSNMod, test = "F")
++```
++
++Quantile residuals can be used to assess the model:
++
++```{r PSNRes}
++qr <- statmod::qresid(PSNMod)
++qqnorm(qr,
++       las = 1)
++qqline(qr,
++       col = "grey")
++```
++
++The quantile residuals suggest that this model looks fine.
++
++
++
++## References
